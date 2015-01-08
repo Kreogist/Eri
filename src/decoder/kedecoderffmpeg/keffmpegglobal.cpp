@@ -79,7 +79,7 @@ KEFfmpegGlobal::~KEFfmpegGlobal()
     ;
 }
 
-void KEFfmpegGlobal::initialFFMpeg()
+inline void KEFfmpegGlobal::initialFFMpeg()
 {
     //Check the initialized state.
     if(m_initialized)

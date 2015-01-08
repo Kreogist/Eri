@@ -15,34 +15,27 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEGLOBAL_H
-#define KEGLOBAL_H
+#ifndef KNCONNECTIONHANDLER_H
+#define KNCONNECTIONHANDLER_H
+
+#include <QLinkedList>
 
 #include <QObject>
 
-namespace Eri
-{
-struct BufferData
-{
-    int frameCount;
-    QByteArray data;
-};
-}
-
-using namespace Eri;
-
-class KEGlobal : public QObject
+class KNConnectionHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit KEGlobal(QObject *parent = 0);
-    ~KEGlobal();
-
-signals:
-
-public slots:
+    explicit KNConnectionHandler(QObject *parent = 0);
+    ~KNConnectionHandler();
+    bool isEmpty() const;
+    int size() const;
+    void disconnectAll();
+    void addConnectionHandle(const QMetaObject::Connection connection);
+    KNConnectionHandler &operator += (const QMetaObject::Connection connection);
 
 private:
+    QLinkedList<QMetaObject::Connection> m_connections;
 };
 
-#endif // KEGLOBAL_H
+#endif // KNCONNECTIONHANDLER_H

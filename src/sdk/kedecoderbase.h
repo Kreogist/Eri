@@ -18,6 +18,8 @@
 #ifndef KEDECODERBASE_H
 #define KEDECODERBASE_H
 
+#include "keglobal.h"
+
 #include <QObject>
 
 class KEDecoderBase : public QObject
@@ -28,7 +30,11 @@ public:
     ~KEDecoderBase();
     virtual bool reset()=0;
     virtual bool loadLocalFile(const QString &filePath)=0;
-    virtual QByteArray decodeData()=0;
+    virtual BufferData decodeData()=0;
+
+    //Informations.
+    virtual int bufferSize()=0;
+    virtual int sampleRate()=0;
 
 signals:
 

@@ -15,34 +15,28 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEGLOBAL_H
-#define KEGLOBAL_H
+#ifndef KEPLAYBACKPORTAUDIO_H
+#define KEPLAYBACKPORTAUDIO_H
 
-#include <QObject>
+#include "keportaudioglobal.h"
 
-namespace Eri
-{
-struct BufferData
-{
-    int frameCount;
-    QByteArray data;
-};
-}
+#include "keplaybackbase.h"
 
-using namespace Eri;
-
-class KEGlobal : public QObject
+class KEPlaybackPortAudio : public KEPlaybackBase
 {
     Q_OBJECT
 public:
-    explicit KEGlobal(QObject *parent = 0);
-    ~KEGlobal();
-
-signals:
-
-public slots:
+    explicit KEPlaybackPortAudio(QObject *parent = 0);
+    ~KEPlaybackPortAudio();
+    void reset();
+    bool setDecoder(KEDecoderBase *decoder);
 
 private:
+    KEPortAudioGlobal *m_portAudioGlobal;
+    KEDecoderBase *m_decoder=nullptr;
+
+    PaStream *m_stream=NULL;
+    PaTime m_outputLatency;
 };
 
-#endif // KEGLOBAL_H
+#endif // KEPLAYBACKPORTAUDIO_H

@@ -20,11 +20,11 @@
 KEGlobal::KEGlobal(QObject *parent) :
     QObject(parent)
 {
-
+    ;
 }
 
 KEGlobal::~KEGlobal()
 {
-
+    ;
 }
 

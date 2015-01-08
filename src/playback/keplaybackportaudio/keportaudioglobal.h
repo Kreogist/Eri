@@ -15,34 +15,36 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEGLOBAL_H
-#define KEGLOBAL_H
+#ifndef KEPORTAUDIOGLOBAL_H
+#define KEPORTAUDIOGLOBAL_H
+
+#include "portaudio.h"
 
 #include <QObject>
 
-namespace Eri
-{
-struct BufferData
-{
-    int frameCount;
-    QByteArray data;
-};
-}
-
-using namespace Eri;
-
-class KEGlobal : public QObject
+class KEPortAudioGlobal : public QObject
 {
     Q_OBJECT
 public:
-    explicit KEGlobal(QObject *parent = 0);
-    ~KEGlobal();
+    static KEPortAudioGlobal *instance();
+    ~KEPortAudioGlobal();
+    bool isAvailable();
+    PaStreamParameters *outputParameters();
 
 signals:
 
 public slots:
 
 private:
+    inline void initialPortAudio();
+    inline void initialAudioDevice();
+    static KEPortAudioGlobal *m_instance;
+    explicit KEPortAudioGlobal(QObject *parent = 0);
+    //Initialized flag.
+    bool m_available=false;
+    bool m_initialized=false;
+
+    PaStreamParameters m_outputParameters;
 };
 
-#endif // KEGLOBAL_H
+#endif // KEPORTAUDIOGLOBAL_H

@@ -102,6 +102,60 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
         //!FIXME: Set error to "Cannot open file."
         return false;
     }
+    return parseFormatContext();
+}
+
+BufferData KEDecoderFfmpeg::decodeData()
+{
+    //Find the next audio stream frame.
+    while(av_read_frame(m_formatContext, m_packet)>=0)
+    {
+        //Ensure that the stream is audio stream.
+        if(m_packet->stream_index==m_audioStreamIndex)
+        {
+            //Decode the audio.
+            int gotFramePointer=0,
+                decodeResult=avcodec_decode_audio4(m_codecContext,
+                                                   m_audioFrame,
+                                                   &gotFramePointer,
+                                                   m_packet);
+            //Check if we decode it successful.
+            if(decodeResult>=0 && gotFramePointer>0)
+            {
+                //Resampling the data.
+                swr_convert(m_resampleContext,
+                            &m_audioBuffer,
+                            MAX_AUDIO_FRAME_SIZE,
+                            (const quint8 **)m_audioFrame->data,
+                            m_audioFrame->nb_samples);
+                //Generate the buffer data.
+                BufferData buffer;
+                buffer.frameCount=m_audioFrame->nb_samples;
+                buffer.data=QByteArray((char *)m_audioBuffer,
+                                       MAX_AUDIO_FRAME_SIZE);
+                //Free the packet.
+                av_free_packet(m_packet);
+                //Return the data.
+                return buffer;
+            }
+        }
+        av_free_packet(m_packet);
+    }
+    return BufferData();
+}
+
+int KEDecoderFfmpeg::bufferSize()
+{
+    return m_ffmpegGlobal->bufferSize();
+}
+
+int KEDecoderFfmpeg::sampleRate()
+{
+    return m_ffmpegGlobal->sampleRate();
+}
+
+bool KEDecoderFfmpeg::parseFormatContext()
+{
     //Get the stream information.
     if(avformat_find_stream_info(m_formatContext, NULL)<0)
     {
@@ -156,44 +210,6 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
                                          NULL);
     //Initial the audio resampling.
     swr_init(m_resampleContext);
-
     return true;
-}
-
-QByteArray KEDecoderFfmpeg::decodeData()
-{
-    //Find the next audio stream frame.
-    while(av_read_frame(m_formatContext, m_packet)>=0)
-    {
-        //Ensure that the stream is audio stream.
-        if(m_packet->stream_index==m_audioStreamIndex)
-        {
-            //Decode the audio.
-            int gotFramePointer=0,
-                decodeResult=avcodec_decode_audio4(m_codecContext,
-                                                   m_audioFrame,
-                                                   &gotFramePointer,
-                                                   m_packet);
-            //Check if we decode it successful.
-            if(decodeResult>=0 && gotFramePointer>0)
-            {
-                //Resampling the data.
-                swr_convert(m_resampleContext,
-                            &m_audioBuffer,
-                            MAX_AUDIO_FRAME_SIZE,
-                            (const quint8 **)m_audioFrame->data,
-                            m_audioFrame->nb_samples);
-                //Generate the buffer.
-                QByteArray bufferData=QByteArray((char *)m_audioBuffer,
-                                                 MAX_AUDIO_FRAME_SIZE);
-                //Free the packet.
-                av_free_packet(m_packet);
-                //Return the data.
-                return bufferData;
-            }
-        }
-        av_free_packet(m_packet);
-    }
-    return QByteArray();
 }
 

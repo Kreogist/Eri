@@ -37,9 +37,12 @@ public:
     ~KEDecoderFfmpeg();
     bool reset();
     bool loadLocalFile(const QString &filePath);
-    QByteArray decodeData();
+    BufferData decodeData();
+    int bufferSize();
+    int sampleRate();
 
 private:
+    bool parseFormatContext();
     KEFfmpegGlobal *m_ffmpegGlobal;
     SwrContext *m_resampleContext=NULL;
     AVPacket *m_packet;

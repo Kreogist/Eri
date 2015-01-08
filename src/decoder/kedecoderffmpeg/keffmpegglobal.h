@@ -35,7 +35,6 @@ class KEFfmpegGlobal : public QObject
 public:
     static KEFfmpegGlobal *instance();
     ~KEFfmpegGlobal();
-    void initialFFMpeg();
     int bufferSize() const;
     int samples() const;
     void setSamples(int samples);
@@ -50,10 +49,13 @@ signals:
 public slots:
 
 private:
+    inline void initialFFMpeg();
     inline void resetPatameters();
     inline void updateLayoutParameters();
     explicit KEFfmpegGlobal(QObject *parent = 0);
     static KEFfmpegGlobal *m_instance;
+
+    //Initialized flag.
     bool m_initialized=false;
 
     //Layout parameters.

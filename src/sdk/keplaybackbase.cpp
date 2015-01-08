@@ -15,34 +15,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEGLOBAL_H
-#define KEGLOBAL_H
+#include "keplaybackbase.h"
 
-#include <QObject>
-
-namespace Eri
+KEPlaybackBase::KEPlaybackBase(QObject *parent) :
+    QObject(parent)
 {
-struct BufferData
-{
-    int frameCount;
-    QByteArray data;
-};
+    ;
 }
 
-using namespace Eri;
-
-class KEGlobal : public QObject
+KEPlaybackBase::~KEPlaybackBase()
 {
-    Q_OBJECT
-public:
-    explicit KEGlobal(QObject *parent = 0);
-    ~KEGlobal();
+    ;
+}
 
-signals:
-
-public slots:
-
-private:
-};
-
-#endif // KEGLOBAL_H
