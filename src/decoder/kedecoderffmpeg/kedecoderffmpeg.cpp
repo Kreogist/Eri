@@ -59,12 +59,19 @@ KEDecoderFfmpeg::~KEDecoderFfmpeg()
 
 bool KEDecoderFfmpeg::reset()
 {
+    //Check the format context state.
+    if(m_formatContext!=NULL)
+    {
+        //Close the format context.
+        avformat_close_input(&m_formatContext);
+    }
     //Reset the file info.
     m_currentFileInfo=QFileInfo();
     //Initial the audio stream.
     m_audioStreamIndex=-1;
-    //Reset codec context;
+    //Reset codec context and decoder;
     m_codecContext=NULL;
+    m_decoder=NULL;
     //Check the resample context data.
     if(m_resampleContext!=NULL)
     {

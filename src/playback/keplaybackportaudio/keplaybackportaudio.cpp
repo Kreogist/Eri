@@ -120,7 +120,7 @@ void KEPlaybackPortAudio::stop()
 void KEPlaybackPortAudio::onActionPlayNextPacket()
 {
     //Check the state and decoder at very beginning.
-    if(m_state!=StatePlaying && m_decoder!=nullptr)
+    if(m_state!=StatePlaying || m_decoder==nullptr)
     {
         return;
     }
