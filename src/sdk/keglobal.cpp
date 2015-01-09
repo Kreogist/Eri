@@ -20,7 +20,37 @@
 KEGlobal::KEGlobal(QObject *parent) :
     QObject(parent)
 {
-    ;
+    //Initial the default settings.
+    m_sampleFormat=SampleSignInt16;
+    m_sampleRate=44100;
+}
+
+int KEGlobal::channel() const
+{
+    return m_channel;
+}
+
+int KEGlobal::sampleRate() const
+{
+    return m_sampleRate;
+}
+
+void KEGlobal::setSampleRate(int sampleRate)
+{
+    //Set the sample rate.
+    m_sampleRate = sampleRate;
+    //Emit configure updated signal.
+    emit updateResampleConfigure();
+}
+
+void KEGlobal::setSamplingConfigure(int sampleFormat,
+                                    int sampleRate)
+{
+    //Update the configure.
+    m_sampleFormat=sampleFormat;
+    m_sampleRate=sampleRate;
+    //Emit configure updated signal.
+    emit updateResampleConfigure();
 }
 
 KEGlobal *KEGlobal::m_instance=nullptr;
@@ -34,6 +64,7 @@ KEGlobal::~KEGlobal()
 {
     ;
 }
+
 int KEGlobal::sampleFormat() const
 {
     return m_sampleFormat;
@@ -41,5 +72,8 @@ int KEGlobal::sampleFormat() const
 
 void KEGlobal::setSampleFormat(int sampleFormat)
 {
+    //Update the sample format.
     m_sampleFormat = sampleFormat;
+    //Emit configure updated signal.
+    emit updateResampleConfigure();
 }

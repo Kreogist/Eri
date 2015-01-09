@@ -37,7 +37,8 @@ public:
     ~KEDecoderFfmpeg();
     bool reset();
     bool loadLocalFile(const QString &filePath);
-    BufferData decodeData();
+    KEAudioBufferData decodeData();
+    int state();
     int bufferSize();
     int sampleRate();
     bool seek(const qint64 &position);

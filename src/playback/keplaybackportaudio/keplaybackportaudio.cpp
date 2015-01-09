@@ -26,9 +26,13 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
 {
     //Initial the PortAudio, get PortAudio global.
     m_portAudioGlobal=KEPortAudioGlobal::instance();
+    //Link resample update.
+    connect(m_portAudioGlobal, &KEPortAudioGlobal::requireUpdateResample,
+            this, &KEPlaybackPortAudio::onActionUpdateResample);
     //Link the play loop.
     connect(this, &KEPlaybackPortAudio::playNextPacket,
-            this, &KEPlaybackPortAudio::onActionPlayNextPacket);
+            this, &KEPlaybackPortAudio::onActionPlayNextPacket,
+            Qt::UniqueConnection);
 }
 
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
@@ -40,6 +44,10 @@ KEPlaybackPortAudio::~KEPlaybackPortAudio()
 
 void KEPlaybackPortAudio::reset()
 {
+    //Block all the signals.
+    blockSignals(true);
+    //Reset the state.
+    m_state=StateStopped;
     //Free the stream.
     if(m_stream!=NULL)
     {
@@ -53,11 +61,8 @@ void KEPlaybackPortAudio::reset()
         //Reset the stream data.
         m_stream=NULL;
     }
-    //Release the decoder.
-    if(m_decoder!=nullptr)
-    {
-        m_decoder=nullptr;
-    }
+    //Release the signal blocks.
+    blockSignals(false);
 }
 
 bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
@@ -71,57 +76,56 @@ bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
 
 void KEPlaybackPortAudio::start()
 {
-    //Clear the stop flag.
-    m_stopFlag=false;
-    m_pauseFlag=false;
-    //Initial the stream according to the decoder.
-    PaError streamError=Pa_OpenDefaultStream(&m_stream,
-                                             0,
-                                             2,
-                                             paInt16,
-                                             44100,
-                                             0,
-                                             NULL,
-                                             NULL);
-    //Check the error.
-    if(streamError!=paNoError)
+    //Check the state
+    //If state is StateNoFile or it is already started, exit directly.
+    if(m_state==StatePlaying || m_decoder==nullptr)
     {
         return;
     }
-    //Save the output latency.
-    m_outputLatency=Pa_GetStreamInfo(m_stream)->outputLatency;
-    //Start the stream.
-    Pa_StartStream(m_stream);
+    //Reset the play state to state playing.
+    m_state=StatePlaying;
+    //Open the default stream to current stream.
+    startDefaultStream();
     //Emit play signal.
     emit playNextPacket();
 }
 
 void KEPlaybackPortAudio::pause()
 {
-    //Set pause flag.
-    m_pauseFlag=true;
-    //Close the stream.
-    Pa_CloseStream(&m_stream);
+    if(m_state!=StatePaused)
+    {
+        //Set state to pause.
+        m_state=StatePaused;
+        //Close the stream.
+        Pa_CloseStream(&m_stream);
+    }
 }
 
 void KEPlaybackPortAudio::stop()
 {
-    //Set stop flag.
-    m_stopFlag=true;
-    //Close the stream.
-    Pa_CloseStream(&m_stream);
-    //Move back to the first.
-    m_decoder->seek(0);
+    if(m_state!=StateStopped)
+    {
+        //Set state to stop.
+        m_state=StateStopped;
+        //Close the stream.
+        Pa_CloseStream(&m_stream);
+        //Move decoder back to the postion 0.
+        if(m_decoder!=nullptr)
+        {
+            m_decoder->seek(0);
+        }
+    }
 }
 
 void KEPlaybackPortAudio::onActionPlayNextPacket()
 {
-    //Get the output data.
-    BufferData outputBuffer=m_decoder->decodeData();
-    if(m_pauseFlag || m_stopFlag)
+    //Check the state and decoder at very beginning.
+    if(m_state!=StatePlaying && m_decoder!=nullptr)
     {
         return;
     }
+    //Get the output data.
+    KEAudioBufferData outputBuffer=m_decoder->decodeData();
     if(outputBuffer.data.isEmpty())
     {
         stop();
@@ -138,4 +142,38 @@ void KEPlaybackPortAudio::onActionPlayNextPacket()
     }
     //Ask to play the next packet.
     emit playNextPacket();
+}
+
+void KEPlaybackPortAudio::onActionUpdateResample()
+{
+    //Check the state.
+    if(m_state==StatePlaying)
+    {
+        //Close the current stream.
+        Pa_CloseStream(m_stream);
+        //Restart a stream.
+        startDefaultStream();
+    }
+}
+
+inline void KEPlaybackPortAudio::startDefaultStream()
+{
+    //Initial the stream according to the decoder.
+    PaError streamError=Pa_OpenDefaultStream(&m_stream,
+                                             0,
+                                             m_portAudioGlobal->outputChannels(),
+                                             m_portAudioGlobal->sampleFormat(),
+                                             m_portAudioGlobal->sampleRate(),
+                                             0,
+                                             NULL,
+                                             NULL);
+    //Check the error.
+    if(streamError!=paNoError)
+    {
+        return;
+    }
+    //Save the output latency.
+    m_outputLatency=Pa_GetStreamInfo(m_stream)->outputLatency;
+    //Start the stream.
+    Pa_StartStream(m_stream);
 }

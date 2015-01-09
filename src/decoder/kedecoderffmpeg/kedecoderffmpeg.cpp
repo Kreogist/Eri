@@ -105,7 +105,7 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
     return parseFormatContext();
 }
 
-BufferData KEDecoderFfmpeg::decodeData()
+KEAudioBufferData KEDecoderFfmpeg::decodeData()
 {
     //Find the next audio stream frame.
     while(av_read_frame(m_formatContext, m_packet)>=0)
@@ -129,7 +129,7 @@ BufferData KEDecoderFfmpeg::decodeData()
                             (const quint8 **)m_audioFrame->data,
                             m_audioFrame->nb_samples);
                 //Generate the buffer data.
-                BufferData buffer;
+                KEAudioBufferData buffer;
                 //The frame count.
                 buffer.frameCount=m_audioFrame->nb_samples;
                 //First frame's timestamp.
@@ -145,7 +145,12 @@ BufferData KEDecoderFfmpeg::decodeData()
         }
         av_free_packet(m_packet);
     }
-    return BufferData();
+    return KEAudioBufferData();
+}
+
+int KEDecoderFfmpeg::state()
+{
+    ;
 }
 
 int KEDecoderFfmpeg::bufferSize()

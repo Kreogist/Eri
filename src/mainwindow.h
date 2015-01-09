@@ -3,9 +3,7 @@
 
 #include <QMainWindow>
 
-class QThread;
-class KEDecoderBase;
-class KEPlaybackBase;
+class KEPlayer;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -16,15 +14,17 @@ public:
 signals:
 
 public slots:
-    void open();
-    void play();
-    void pause();
-    void stop();
+    void open1();
+    void play1();
+    void pause1();
+    void stop1();
+    void open2();
+    void play2();
+    void pause2();
+    void stop2();
 
 private:
-    KEDecoderBase *m_decoder;
-    KEPlaybackBase *m_playback;
-    QThread *m_decoderThread, *m_playbackThread;
+    KEPlayer *m_player1, *m_player2;
 };
 
 #endif // MAINWINDOW_H

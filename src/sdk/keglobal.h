@@ -22,7 +22,7 @@
 
 namespace Eri
 {
-struct BufferData
+struct KEAudioBufferData
 {
     int timestamp;
     int frameCount;
@@ -36,6 +36,13 @@ enum KESampleFormat
     SampleFloat,
     SampleDouble
 };
+enum KEPlayingStatus
+{
+    StatePlaying,
+    StatePaused,
+    StateStopped,
+    StateNoFile
+};
 }
 
 using namespace Eri;
@@ -46,18 +53,27 @@ class KEGlobal : public QObject
 public:
     static KEGlobal *instance();
     ~KEGlobal();
+    int channel() const;
     int sampleFormat() const;
+    int sampleRate() const;
     void setSampleFormat(int sampleFormat);
+    void setSampleRate(int sampleRate);
+    void setSamplingConfigure(int sampleFormat,
+                              int sampleRate);
 
 signals:
-    void updateResample();
+    void updateResampleConfigure();
 
 public slots:
 
 private:
     static KEGlobal *m_instance;
     explicit KEGlobal(QObject *parent = 0);
+
+    //Output resample configure.
     int m_sampleFormat;
+    int m_sampleRate;
+    int m_channel=2; //This configure is locked.
 };
 
 #endif // KEGLOBAL_H

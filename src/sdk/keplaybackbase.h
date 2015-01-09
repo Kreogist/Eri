@@ -19,6 +19,7 @@
 #define KEPLAYBACKBASE_H
 
 #include "kedecoderbase.h"
+#include "keglobal.h"
 
 #include <QObject>
 
