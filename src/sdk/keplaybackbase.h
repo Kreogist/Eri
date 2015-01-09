@@ -30,8 +30,15 @@ public:
     ~KEPlaybackBase();
     virtual void reset()=0;
     virtual bool setDecoder(KEDecoderBase *decoder)=0;
+    virtual void start()=0;
+    virtual void pause()=0;
+    virtual void stop()=0;
 
 signals:
+    void playNextPacket();
+
+protected slots:
+    virtual void onActionPlayNextPacket()=0;
 
 public slots:
 };

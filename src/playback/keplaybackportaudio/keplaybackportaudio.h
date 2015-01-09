@@ -30,6 +30,12 @@ public:
     ~KEPlaybackPortAudio();
     void reset();
     bool setDecoder(KEDecoderBase *decoder);
+    void start();
+    void pause();
+    void stop();
+
+protected slots:
+    void onActionPlayNextPacket();
 
 private:
     KEPortAudioGlobal *m_portAudioGlobal;
@@ -37,6 +43,7 @@ private:
 
     PaStream *m_stream=NULL;
     PaTime m_outputLatency;
+    bool m_stopFlag=false, m_pauseFlag=false;
 };
 
 #endif // KEPLAYBACKPORTAUDIO_H

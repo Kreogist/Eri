@@ -26,11 +26,16 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
 {
     //Initial the PortAudio, get PortAudio global.
     m_portAudioGlobal=KEPortAudioGlobal::instance();
+    //Link the play loop.
+    connect(this, &KEPlaybackPortAudio::playNextPacket,
+            this, &KEPlaybackPortAudio::onActionPlayNextPacket);
 }
 
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
 {
-    ;
+    blockSignals(true);
+    //Force close the stream.
+    Pa_CloseStream(m_stream);
 }
 
 void KEPlaybackPortAudio::reset()
@@ -61,6 +66,14 @@ bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
     reset();
     //Save the decoder.
     m_decoder=decoder;
+    return true;
+}
+
+void KEPlaybackPortAudio::start()
+{
+    //Clear the stop flag.
+    m_stopFlag=false;
+    m_pauseFlag=false;
     //Initial the stream according to the decoder.
     PaError streamError=Pa_OpenDefaultStream(&m_stream,
                                              0,
@@ -73,24 +86,56 @@ bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
     //Check the error.
     if(streamError!=paNoError)
     {
-        return false;
+        return;
     }
     //Save the output latency.
     m_outputLatency=Pa_GetStreamInfo(m_stream)->outputLatency;
     //Start the stream.
-    PaError openStreamError=Pa_StartStream(m_stream);
+    Pa_StartStream(m_stream);
+    //Emit play signal.
+    emit playNextPacket();
+}
 
-    //Do a test here.
-    BufferData test=m_decoder->decodeData();
-    while(!test.data.isEmpty())
+void KEPlaybackPortAudio::pause()
+{
+    //Set pause flag.
+    m_pauseFlag=true;
+    //Close the stream.
+    Pa_CloseStream(&m_stream);
+}
+
+void KEPlaybackPortAudio::stop()
+{
+    //Set stop flag.
+    m_stopFlag=true;
+    //Close the stream.
+    Pa_CloseStream(&m_stream);
+    //Move back to the first.
+    m_decoder->seek(0);
+}
+
+void KEPlaybackPortAudio::onActionPlayNextPacket()
+{
+    //Get the output data.
+    BufferData outputBuffer=m_decoder->decodeData();
+    if(m_pauseFlag || m_stopFlag)
     {
-        PaError writeError=Pa_WriteStream(m_stream,
-                                          test.data.constData(),
-                                          test.frameCount);
-        if(writeError!=paNoError)
-        {
-            qDebug()<<Pa_GetErrorText(writeError);
-        }
-        test=m_decoder->decodeData();
+        return;
     }
+    if(outputBuffer.data.isEmpty())
+    {
+        stop();
+        return;
+    }
+    //Write it to output device, according to the information.
+    PaError writeError=Pa_WriteStream(m_stream,
+                                      outputBuffer.data.constData(),
+                                      outputBuffer.frameCount);
+    //Check if there's any error.
+    if(writeError!=paNoError)
+    {
+        qDebug()<<Pa_GetErrorText(writeError);
+    }
+    //Ask to play the next packet.
+    emit playNextPacket();
 }

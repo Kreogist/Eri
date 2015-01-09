@@ -24,8 +24,17 @@ namespace Eri
 {
 struct BufferData
 {
+    int timestamp;
     int frameCount;
     QByteArray data;
+};
+enum KESampleFormat
+{
+    SampleUnsignInt8,
+    SampleSignInt16,
+    SampleSignInt32,
+    SampleFloat,
+    SampleDouble
 };
 }
 
@@ -35,14 +44,20 @@ class KEGlobal : public QObject
 {
     Q_OBJECT
 public:
-    explicit KEGlobal(QObject *parent = 0);
+    static KEGlobal *instance();
     ~KEGlobal();
+    int sampleFormat() const;
+    void setSampleFormat(int sampleFormat);
 
 signals:
+    void updateResample();
 
 public slots:
 
 private:
+    static KEGlobal *m_instance;
+    explicit KEGlobal(QObject *parent = 0);
+    int m_sampleFormat;
 };
 
 #endif // KEGLOBAL_H

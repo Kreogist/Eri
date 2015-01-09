@@ -16,26 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #include <QApplication>
-#include <QMainWindow>
-
-#include "decoder/kedecoderffmpeg/kedecoderffmpeg.h"
-
-#include "playback/keplaybackportaudio/keplaybackportaudio.h"
+#include "mainwindow.h"
 
 #include <QDebug>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QMainWindow mainWindow;
-
-    KEDecoderBase *ffmpegDecoder=new KEDecoderFfmpeg;
-    qDebug()<<ffmpegDecoder->loadLocalFile("D:\\音乐\\Compact Discs\\ラブライブ！\\[100825] ラブライブ！ 1stシングル「僕らのLIVE 君とのLIFE」／μ's (FLAC+BK)\\01. 僕らのLIVE 君とのLIFE.flac");
-//    qDebug()<<ffmpegDecoder->loadLocalFile("D:\\音乐\\Compact Discs\\Various.Artists.-.[Essential.Bach.36.Greatest.Masterpieces.2CD.DECCA].专辑.(APE)\\Essential Bach CD2\\01. Brandenburg Concerto No. 2 in F major, BWV 1047.m4a");
-    KEPlaybackBase *portAudioPlayback=new KEPlaybackPortAudio;
-    portAudioPlayback->setDecoder(ffmpegDecoder);
-    delete portAudioPlayback;
-    delete ffmpegDecoder;
+    MainWindow mainWindow;
     mainWindow.show();
     return app.exec();
 }

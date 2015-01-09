@@ -40,6 +40,7 @@ public:
     BufferData decodeData();
     int bufferSize();
     int sampleRate();
+    bool seek(const qint64 &position);
 
 private:
     bool parseFormatContext();

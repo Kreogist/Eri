@@ -29,10 +29,12 @@ SOURCES += \
     sdk/keglobal.cpp \
     sdk/kedecoderbase.cpp \
     sdk/keplaybackbase.cpp \
-    sdk/knconnectionhandler.cpp
+    sdk/knconnectionhandler.cpp \
+    mainwindow.cpp
 
 HEADERS += \
     sdk/keglobal.h \
     sdk/kedecoderbase.h \
     sdk/keplaybackbase.h \
-    sdk/knconnectionhandler.h
+    sdk/knconnectionhandler.h \
+    mainwindow.h

@@ -130,7 +130,11 @@ BufferData KEDecoderFfmpeg::decodeData()
                             m_audioFrame->nb_samples);
                 //Generate the buffer data.
                 BufferData buffer;
+                //The frame count.
                 buffer.frameCount=m_audioFrame->nb_samples;
+                //First frame's timestamp.
+                buffer.timestamp=m_audioFrame->pkt_pts;
+                //Buffer raw data.
                 buffer.data=QByteArray((char *)m_audioBuffer,
                                        MAX_AUDIO_FRAME_SIZE);
                 //Free the packet.
@@ -152,6 +156,11 @@ int KEDecoderFfmpeg::bufferSize()
 int KEDecoderFfmpeg::sampleRate()
 {
     return m_ffmpegGlobal->sampleRate();
+}
+
+bool KEDecoderFfmpeg::seek(const qint64 &position)
+{
+    return (av_seek_frame(m_formatContext, m_audioStreamIndex, position, 0)>=0);
 }
 
 bool KEDecoderFfmpeg::parseFormatContext()

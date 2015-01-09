@@ -23,8 +23,23 @@ KEGlobal::KEGlobal(QObject *parent) :
     ;
 }
 
+KEGlobal *KEGlobal::m_instance=nullptr;
+
+KEGlobal *KEGlobal::instance()
+{
+    return m_instance==nullptr?m_instance=new KEGlobal:m_instance;
+}
+
 KEGlobal::~KEGlobal()
 {
     ;
 }
+int KEGlobal::sampleFormat() const
+{
+    return m_sampleFormat;
+}
 
+void KEGlobal::setSampleFormat(int sampleFormat)
+{
+    m_sampleFormat = sampleFormat;
+}
