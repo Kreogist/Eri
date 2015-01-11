@@ -8,8 +8,12 @@ INCLUDEPATH += sdk
 
 #FFMpeg configure
 libFFMpeg{
-    LIBS += -lavformat -lavcodec -lavutil
-    LIBS += -lswresample
+    macx: {
+        #Use brew to install ffmpeg.
+        LIBS += -L/usr/local/lib/
+        LIBS += -framework CoreFoundation
+    }
+    LIBS += -lavformat -lavcodec -lavutil -lswresample -lswscale
     SOURCES += decoder/kedecoderffmpeg/keffmpegglobal.cpp \
                decoder/kedecoderffmpeg/kedecoderffmpeg.cpp
     HEADERS += decoder/kedecoderffmpeg/keffmpegglobal.h \
@@ -17,6 +21,12 @@ libFFMpeg{
 }
 
 libPortAudio{
+    DEFINES += ENABLE_PORTAUDIO
+    macx: {
+        #Use brew to install PortAudio.
+        LIBS += -L/usr/local/lib/
+        INCLUDEPATH += /usr/local/include/
+    }
     LIBS += -lportaudio
     SOURCES += playback/keplaybackportaudio/keplaybackportaudio.cpp \
                playback/keplaybackportaudio/keportaudioglobal.cpp
