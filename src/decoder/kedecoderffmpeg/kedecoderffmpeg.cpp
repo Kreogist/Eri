@@ -29,8 +29,8 @@ KEDecoderFfmpeg::KEDecoderFfmpeg(QObject *parent) :
     m_ffmpegGlobal=KEFfmpegGlobal::instance();
 
     //Generate buffer, set the default audio frame size.
-    //The 192000 means 1 second of 32bit 48kHz audio.
-    //To calculate this: means 4bytes(32bit)*48000=192000.
+    //The 192000 means 1 second of 32bits 48kHz audio.
+    //To calculate this: means 4bytes(32bits)*48000=192000.
     m_audioFrameSize=192000;
     m_audioBuffer=(quint8 *)av_malloc(m_audioFrameSize*2);
     //Reset decoder.
@@ -83,6 +83,7 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
     QFileInfo fileCheck(filePath);
     if(!fileCheck.exists())
     {
+        qDebug()<<"File not exist.";
         //!FIXME: Set error to "File not exist."
         return false;
     }
@@ -99,6 +100,7 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
                            NULL,
                            NULL)!=0)
     {
+        qDebug()<<"Cannot open file.";
         //!FIXME: Set error to "Cannot open file."
         return false;
     }
@@ -123,18 +125,22 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
         if(packet.stream_index==m_audioStreamIndex)
         {
             //Decode the audio.
-            int gotFramePointer=0,
+            int gotFramePointer=0, decodeResult=0;
+            //Decode the audio data until the packet size.
+            while(decodeResult!=packet.size)
+            {
                 decodeResult=avcodec_decode_audio4(m_codecContext,
                                                    audioFrame,
                                                    &gotFramePointer,
                                                    &packet);
-            //Check if we decode it successful.
-            if(decodeResult>=0 && gotFramePointer>0)
+            }
+            //Ignore the no used frame.
+            if(gotFramePointer>0)
             {
                 //Resampling the data.
                 swr_convert(m_resampleContext,
                             &m_audioBuffer,
-                            m_audioFrameSize*2,
+                            m_audioFrameSize,
                             (const quint8 **)audioFrame->data,
                             audioFrame->nb_samples);
                 //Generate the buffer data.
@@ -185,6 +191,7 @@ bool KEDecoderFfmpeg::parseFormatContext()
     //Get the stream information.
     if(avformat_find_stream_info(m_formatContext, NULL)<0)
     {
+        qDebug()<<"Cannot find stream information.";
         //!FIXME: Set error to "Cannot find stream information."
         return false;
     }
@@ -203,6 +210,7 @@ bool KEDecoderFfmpeg::parseFormatContext()
     //Return false if there's no audio stream.
     if(-1==m_audioStreamIndex)
     {
+        qDebug()<<"Cannot find audio stream.";
         //!FIXME: Set error to "Cannot find audio stream."
         return false;
     }
@@ -212,12 +220,14 @@ bool KEDecoderFfmpeg::parseFormatContext()
     m_decoder=avcodec_find_decoder(m_codecContext->codec_id);
     if(NULL==m_decoder)
     {
+        qDebug()<<"Cannot find decoder.";
         //!FIXME: Set error to "Cannot find decoder."
         return false;
     }
     //Open the codec context via decoder.
     if(avcodec_open2(m_codecContext, m_decoder, NULL)<0)
     {
+        qDebug()<<"Cannot open the decoder.";
         //!FIXME: Set error to "Cannot open the decoder."
         return false;
     }

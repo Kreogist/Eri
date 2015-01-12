@@ -50,7 +50,6 @@ private:
     AVFormatContext *m_formatContext=NULL;
     AVCodecContext *m_codecContext;
     AVCodec *m_decoder;
-    AVFrame *m_audioFrame;
     quint8 *m_audioBuffer;
     QFileInfo m_currentFileInfo;
     int m_audioStreamIndex=-1;
