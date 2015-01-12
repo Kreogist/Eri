@@ -22,23 +22,17 @@
 
 #include <QDebug>
 
-#define MAX_AUDIO_FRAME_SIZE 192000
-
 KEDecoderFfmpeg::KEDecoderFfmpeg(QObject *parent) :
     KEDecoderBase(parent)
 {
     //Initial the ffmpeg, get ffmpeg global.
     m_ffmpegGlobal=KEFfmpegGlobal::instance();
 
-    //Initial the decoder format context.
-    m_formatContext=avformat_alloc_context();
-    //Initial the packet.
-    m_packet=(AVPacket *)malloc(sizeof(AVPacket));
-    av_init_packet(m_packet);
-    //Initial the frame.
-    m_audioFrame=av_frame_alloc();
-    //Generate buffer.
-    m_audioBuffer=(quint8 *)av_malloc(MAX_AUDIO_FRAME_SIZE*2);
+    //Generate buffer, set the default audio frame size.
+    //The 192000 means 1 second of 32bit 48kHz audio.
+    //To calculate this: means 4bytes(32bit)*48000=192000.
+    m_audioFrameSize=192000;
+    m_audioBuffer=(quint8 *)av_malloc(m_audioFrameSize*2);
     //Reset decoder.
     reset();
 }
@@ -47,12 +41,8 @@ KEDecoderFfmpeg::~KEDecoderFfmpeg()
 {
     //Reset the decoder, release the memory.
     reset();
-    //Free the packet memory.
-    delete m_packet;
     //Free the format context memory.
     avformat_free_context(m_formatContext);
-    //Free the frame memory.
-    av_frame_free(&m_audioFrame);
     //Free the audio buffer.
     av_free(m_audioBuffer);
 }
@@ -64,6 +54,8 @@ bool KEDecoderFfmpeg::reset()
     {
         //Close the format context.
         avformat_close_input(&m_formatContext);
+        //Release the format context to NULL.
+        m_formatContext=NULL;
     }
     //Reset the file info.
     m_currentFileInfo=QFileInfo();
@@ -80,8 +72,6 @@ bool KEDecoderFfmpeg::reset()
         //FFMpeg should done this.
         m_resampleContext=NULL;
     }
-    //Free the packet.
-    av_free_packet(m_packet);
     return true;
 }
 
@@ -89,6 +79,8 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
 {
     //Reset the thread.
     reset();
+    //Initial the decoder format context.
+    m_formatContext=avformat_alloc_context();
     //Check the file is exist or not.
     QFileInfo fileCheck(filePath);
     if(!fileCheck.exists())
@@ -114,44 +106,59 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
 
 KEAudioBufferData KEDecoderFfmpeg::decodeData()
 {
-    //Find the next audio stream frame.
-    while(av_read_frame(m_formatContext, m_packet)>=0)
+    //Check format context first.
+    if(m_formatContext==NULL)
     {
+        return KEAudioBufferData();
+    }
+    //Initial a packet and a frame.
+    AVFrame *audioFrame=av_frame_alloc();
+    AVPacket packet;
+    //Find the next audio stream frame.
+    av_init_packet(&packet);
+    while(av_read_frame(m_formatContext, &packet)>=0)
+    {
+//        qDebug()<<packet.size;
         //Ensure that the stream is audio stream.
-        if(m_packet->stream_index==m_audioStreamIndex)
+        if(packet.stream_index==m_audioStreamIndex)
         {
             //Decode the audio.
             int gotFramePointer=0,
                 decodeResult=avcodec_decode_audio4(m_codecContext,
-                                                   m_audioFrame,
+                                                   audioFrame,
                                                    &gotFramePointer,
-                                                   m_packet);
+                                                   &packet);
             //Check if we decode it successful.
             if(decodeResult>=0 && gotFramePointer>0)
             {
                 //Resampling the data.
                 swr_convert(m_resampleContext,
                             &m_audioBuffer,
-                            MAX_AUDIO_FRAME_SIZE,
-                            (const quint8 **)m_audioFrame->data,
-                            m_audioFrame->nb_samples);
+                            m_audioFrameSize*2,
+                            (const quint8 **)audioFrame->data,
+                            audioFrame->nb_samples);
                 //Generate the buffer data.
                 KEAudioBufferData buffer;
                 //The frame count.
-                buffer.frameCount=m_audioFrame->nb_samples;
+                buffer.frameCount=audioFrame->nb_samples;
                 //First frame's timestamp.
-                buffer.timestamp=m_audioFrame->pkt_pts;
+                buffer.timestamp=audioFrame->pkt_pts;
+//                buffer.timestamp=audioFrame->sample_rate;
                 //Buffer raw data.
                 buffer.data=QByteArray((char *)m_audioBuffer,
-                                       MAX_AUDIO_FRAME_SIZE);
-                //Free the packet.
-                av_free_packet(m_packet);
+                                       m_audioFrameSize);
+                //Free the packet and frame.
+                av_free_packet(&packet);
+                av_frame_free(&audioFrame);
                 //Return the data.
                 return buffer;
             }
         }
-        av_free_packet(m_packet);
+        qDebug()<<"Here?!";
+        av_free_packet(&packet);
     }
+    av_free_packet(&packet);
+    av_frame_free(&audioFrame);
     return KEAudioBufferData();
 }
 
@@ -217,8 +224,16 @@ bool KEDecoderFfmpeg::parseFormatContext()
         return false;
     }
 
-    //Initial the audio resampling context.
-    m_resampleContext=swr_alloc();
+    //Resize the audio frame size, realloc the buffer.
+//    m_audioFrameSize=av_samples_get_buffer_size(NULL,
+//                                                m_codecContext->channels,
+//                                                m_codecContext->sample_rate,
+//                                                m_codecContext->sample_fmt,
+//                                                0);
+//    m_audioBuffer=(quint8 *)av_realloc(m_audioBuffer, m_audioFrameSize*2);
+
+//    //Initial the audio resampling context.
+//    m_resampleContext=swr_alloc();
     //Update the resampling data.
     m_resampleContext=swr_alloc_set_opts(m_resampleContext,
                                          m_ffmpegGlobal->channelLayout(),

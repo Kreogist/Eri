@@ -25,11 +25,12 @@
 #include <QDebug>
 
 KEPlayer::KEPlayer(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    m_musicState(NoMusic),
+    m_playingState(StoppedState),
+    m_playbackThread(new QThread(this)),
+    m_decoderThread(new QThread(this))
 {
-    //Initial the decode and playback thread.
-    m_playbackThread=new QThread(this);
-    m_decoderThread=new QThread(this);
     //Start the thread right now.
     m_playbackThread->start();
     m_decoderThread->start();
@@ -53,7 +54,7 @@ KEPlayer::~KEPlayer()
     }
 }
 
-void KEPlayer::loadLocalFile(const QString &filePath)
+inline void KEPlayer::loadLocalFile(const QString &filePath)
 {
     //Reset the playback.
     if(m_playback!=nullptr)
@@ -64,6 +65,24 @@ void KEPlayer::loadLocalFile(const QString &filePath)
     {
         m_decoder->loadLocalFile(filePath);
     }
+}
+
+void KEPlayer::setPlayingState(const int &playingState)
+{
+    //Save the state.
+    m_musicState=playingState;
+    //Emit playing state changed signal.
+    emit playingStateChanged(m_musicState);
+}
+
+int KEPlayer::musicState() const
+{
+    return m_musicState;
+}
+
+int KEPlayer::playingState() const
+{
+    return m_playingState;
 }
 
 KEDecoderBase *KEPlayer::decoder() const
@@ -98,27 +117,72 @@ void KEPlayer::setPlayback(KEPlaybackBase *playback)
 
 void KEPlayer::play()
 {
+    //Check is current state is PlayingState or not.
+    if(m_playingState==PlayingState)
+    {
+        return;
+    }
+    //Check if playback is null.
     if(m_playback!=nullptr)
     {
         //Start play.
         m_playback->start();
+        //Change the playing state.
+        setPlayingState(PlayingState);
     }
 }
 
 void KEPlayer::pause()
 {
+    //Check is current state is PausedState or not.
+    if(m_playingState==PausedState)
+    {
+        return;
+    }
+    //Check if playback is null.
     if(m_playback!=nullptr)
     {
         //Pause the play back.
         m_playback->pause();
+        //Change the playing state.
+        setPlayingState(PausedState);
     }
 }
 
 void KEPlayer::stop()
 {
+    //Check is current state is StoppedState or not.
+    if(m_playingState==StoppedState)
+    {
+        return;
+    }
+    //Check if playback is null.
     if(m_playback!=nullptr)
     {
         //Stop the playback.
         m_playback->stop();
+        //Change the playing state.
+        setPlayingState(StoppedState);
     }
+}
+
+void KEPlayer::loadUrl(const QUrl &url)
+{
+    //Save the url.
+    m_musicUrl=url;
+    //Check the url type and play the music.
+    if(m_musicUrl.isLocalFile())
+    {
+        loadLocalFile(m_musicUrl.path());
+    }
+}
+
+void KEPlayer::setPosition(qint64 position)
+{
+    ;
+}
+
+void KEPlayer::setVolume(int volume)
+{
+    ;
 }

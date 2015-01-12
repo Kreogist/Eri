@@ -10,8 +10,9 @@
 
 #include "playback/keplaybackportaudio/keplaybackportaudio.h"
 
-
 #include "mainwindow.h"
+
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -66,7 +67,18 @@ MainWindow::~MainWindow()
 
 void MainWindow::open1()
 {
-    m_player1->loadLocalFile(QFileDialog::getOpenFileName(this));
+//    KEDecoderFfmpeg *test=new KEDecoderFfmpeg;
+//    test->loadLocalFile(QFileDialog::getOpenFileName(this));
+//    KEAudioBufferData decodedata=test->decodeData();
+////    int counter=1;
+////    while(!decodedata.data.isEmpty())
+////    {
+////        counter++;
+////        decodedata=test->decodeData();
+////    }
+////    qDebug()<<counter;
+//    delete test;
+    m_player1->loadUrl(QUrl::fromLocalFile(QFileDialog::getOpenFileName(this)));
 }
 
 void MainWindow::play1()
@@ -86,7 +98,7 @@ void MainWindow::stop1()
 
 void MainWindow::open2()
 {
-    m_player2->loadLocalFile(QFileDialog::getOpenFileName(this));
+    m_player2->loadUrl(QUrl::fromLocalFile(QFileDialog::getOpenFileName(this)));
 }
 
 void MainWindow::play2()

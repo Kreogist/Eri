@@ -47,14 +47,14 @@ private:
     bool parseFormatContext();
     KEFfmpegGlobal *m_ffmpegGlobal;
     SwrContext *m_resampleContext=NULL;
-    AVPacket *m_packet;
-    AVFormatContext *m_formatContext;
+    AVFormatContext *m_formatContext=NULL;
     AVCodecContext *m_codecContext;
     AVCodec *m_decoder;
     AVFrame *m_audioFrame;
     quint8 *m_audioBuffer;
     QFileInfo m_currentFileInfo;
     int m_audioStreamIndex=-1;
+    int m_audioFrameSize=0;
 };
 
 #endif // KEDECODERFFMPEG_H

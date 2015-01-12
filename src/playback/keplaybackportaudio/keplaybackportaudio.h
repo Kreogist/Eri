@@ -47,7 +47,7 @@ private:
 
     PaStream *m_stream=NULL;
     PaTime m_outputLatency;
-    int m_state=StateStopped;
+    int m_state=StoppedState;
 };
 
 #endif // KEPLAYBACKPORTAUDIO_H

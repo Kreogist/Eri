@@ -18,6 +18,10 @@
 #ifndef KEPLAYER_H
 #define KEPLAYER_H
 
+#include <QUrl>
+
+#include "keglobal.h"
+
 #include <QObject>
 
 class KEDecoderBase;
@@ -28,24 +32,51 @@ class KEPlayer : public QObject
 public:
     explicit KEPlayer(QObject *parent = 0);
     ~KEPlayer();
-    void loadLocalFile(const QString &filePath);
     KEDecoderBase *decoder() const;
     void setDecoder(KEDecoderBase *decoder);
     KEPlaybackBase *playback() const;
     void setPlayback(KEPlaybackBase *playback);
+    int musicState() const;
+    int playingState() const;
+
+signals:
+    //Music media status.
+    void musicStateChanged(int musicState);
+    void playingStateChanged(int playingState);
+
+    //Player playing states.
+    void positionChanged(qint64 position);
+    void durationChanged(qint64 duration);
+    void volumeChanged(int volume);
+    void finished();
+
+public slots:
+    void loadUrl(const QUrl &url);
 
     void play();
     void pause();
     void stop();
 
-signals:
-
-public slots:
+    void setPosition(qint64 position);
+    void setVolume(int volume);
 
 private:
+    //Load different kinds of file.
+    inline void loadLocalFile(const QString &filePath);
+
+    //Set the state.
+    inline void setPlayingState(const int &playingState);
+
+    //Music player state variables.
+    QUrl m_musicUrl;
+    int m_musicState;
+    int m_playingState;
+
+    //Decoder, playback and their threds.
     KEDecoderBase *m_decoder=nullptr;
     KEPlaybackBase *m_playback=nullptr;
     QThread *m_decoderThread, *m_playbackThread;
+
 };
 
 #endif // KEPLAYER_H

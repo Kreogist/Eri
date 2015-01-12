@@ -31,8 +31,7 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
             this, &KEPlaybackPortAudio::onActionUpdateResample);
     //Link the play loop.
     connect(this, &KEPlaybackPortAudio::playNextPacket,
-            this, &KEPlaybackPortAudio::onActionPlayNextPacket,
-            Qt::UniqueConnection);
+            this, &KEPlaybackPortAudio::onActionPlayNextPacket);
 }
 
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
@@ -47,7 +46,7 @@ void KEPlaybackPortAudio::reset()
     //Block all the signals.
     blockSignals(true);
     //Reset the state.
-    m_state=StateStopped;
+    m_state=StoppedState;
     //Free the stream.
     if(m_stream!=NULL)
     {
@@ -78,12 +77,12 @@ void KEPlaybackPortAudio::start()
 {
     //Check the state
     //If state is StateNoFile or it is already started, exit directly.
-    if(m_state==StatePlaying || m_decoder==nullptr)
+    if(m_state==PlayingState || m_decoder==nullptr)
     {
         return;
     }
     //Reset the play state to state playing.
-    m_state=StatePlaying;
+    m_state=PlayingState;
     //Open the default stream to current stream.
     startDefaultStream();
     //Emit play signal.
@@ -92,10 +91,10 @@ void KEPlaybackPortAudio::start()
 
 void KEPlaybackPortAudio::pause()
 {
-    if(m_state!=StatePaused)
+    if(m_state!=PausedState)
     {
         //Set state to pause.
-        m_state=StatePaused;
+        m_state=PausedState;
         //Close the stream.
         Pa_CloseStream(&m_stream);
     }
@@ -103,10 +102,10 @@ void KEPlaybackPortAudio::pause()
 
 void KEPlaybackPortAudio::stop()
 {
-    if(m_state!=StateStopped)
+    if(m_state!=StoppedState)
     {
         //Set state to stop.
-        m_state=StateStopped;
+        m_state=StoppedState;
         //Close the stream.
         Pa_CloseStream(&m_stream);
         //Move decoder back to the postion 0.
@@ -120,7 +119,7 @@ void KEPlaybackPortAudio::stop()
 void KEPlaybackPortAudio::onActionPlayNextPacket()
 {
     //Check the state and decoder at very beginning.
-    if(m_state!=StatePlaying || m_decoder==nullptr)
+    if(m_state!=PlayingState || m_decoder==nullptr)
     {
         return;
     }
@@ -147,7 +146,7 @@ void KEPlaybackPortAudio::onActionPlayNextPacket()
 void KEPlaybackPortAudio::onActionUpdateResample()
 {
     //Check the state.
-    if(m_state==StatePlaying)
+    if(m_state==PlayingState)
     {
         //Close the current stream.
         Pa_CloseStream(m_stream);

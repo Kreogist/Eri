@@ -28,6 +28,10 @@ struct KEAudioBufferData
     int frameCount;
     QByteArray data;
 };
+struct KEResampleInfo
+{
+    ;
+};
 enum KESampleFormat
 {
     SampleUnsignInt8,
@@ -36,12 +40,21 @@ enum KESampleFormat
     SampleFloat,
     SampleDouble
 };
-enum KEPlayingStatus
+enum KEPlayerStates
 {
-    StatePlaying,
-    StatePaused,
-    StateStopped,
-    StateNoFile
+    StoppedState,
+    PlayingState,
+    PausedState
+};
+enum KEMusicStates
+{
+    NoMusic,
+    LoadingMusic,
+    LoadedMusic,
+    BufferingMusic,
+    BufferedMusic,
+    EndOfMusic,
+    InvaildMusic
 };
 }
 
