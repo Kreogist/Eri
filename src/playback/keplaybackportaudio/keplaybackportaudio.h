@@ -45,13 +45,8 @@ private:
     inline bool startDefaultStream();
     inline void setPlaybackState(const int &state);
 
-    KEDecoderBase *m_decoder=nullptr;
-
-    int m_state=StoppedState;
-
     KEPortAudioGlobal *m_portAudioGlobal;
-    PaStream *m_stream=NULL;
-    PaTime m_outputLatency;
+    KEPortAudioStream m_streamData;
 };
 
 #endif // KEPLAYBACKPORTAUDIO_H

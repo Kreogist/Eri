@@ -29,6 +29,8 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
 {
     //Initial the PortAudio, get PortAudio global.
     m_portAudioGlobal=KEPortAudioGlobal::instance();
+    //Initial the stream data.
+    m_streamData.state=StoppedState;
     //Link resample update.
     connect(m_portAudioGlobal, &KEPortAudioGlobal::requireUpdateResample,
             this, &KEPlaybackPortAudio::onActionUpdateResample);
@@ -38,7 +40,7 @@ KEPlaybackPortAudio::~KEPlaybackPortAudio()
 {
     blockSignals(true);
     //Force close the stream.
-    Pa_CloseStream(m_stream);
+    Pa_CloseStream(m_streamData.stream);
 }
 
 void KEPlaybackPortAudio::reset()
@@ -46,19 +48,19 @@ void KEPlaybackPortAudio::reset()
     //Block all the signals.
     blockSignals(true);
     //Reset the state.
-    m_state=StoppedState;
+    m_streamData.state=StoppedState;
     //Free the stream.
-    if(m_stream!=NULL)
+    if(m_streamData.stream!=NULL)
     {
         //Stop the stream if it's still activated.
-        if(!Pa_IsStreamStopped(m_stream))
+        if(!Pa_IsStreamStopped(m_streamData.stream))
         {
-            Pa_StopStream(m_stream);
+            Pa_StopStream(m_streamData.stream);
         }
         //Close the stream.
-        Pa_CloseStream(m_stream);
+        Pa_CloseStream(m_streamData.stream);
         //Reset the stream data.
-        m_stream=NULL;
+        m_streamData.stream=NULL;
     }
     //Release the signal blocks.
     blockSignals(false);
@@ -69,7 +71,7 @@ bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
     //Reset the playback.
     reset();
     //Save the decoder.
-    m_decoder=decoder;
+    m_streamData.decoder=decoder;
     return true;
 }
 
@@ -77,7 +79,7 @@ void KEPlaybackPortAudio::start()
 {
     //Check the state first.
     //If state is PlayingState already or decoder is NULL, exit directly.
-    if(m_state==PlayingState || m_decoder==nullptr)
+    if(m_streamData.state==PlayingState || m_streamData.decoder==nullptr)
     {
         return;
     }
@@ -92,10 +94,10 @@ void KEPlaybackPortAudio::start()
 void KEPlaybackPortAudio::pause()
 {
     //Check the state.
-    if(m_state!=PausedState)
+    if(m_streamData.state!=PausedState)
     {
         //Close the stream.
-        PaError pauseError=Pa_CloseStream(&m_stream);
+        PaError pauseError=Pa_CloseStream(&m_streamData.stream);
         if(pauseError!=paNoError)
         {
             //!FIXME: Set error to "Cannot pause stream".
@@ -108,19 +110,19 @@ void KEPlaybackPortAudio::pause()
 
 void KEPlaybackPortAudio::stop()
 {
-    if(m_state!=StoppedState)
+    if(m_streamData.state!=StoppedState)
     {
         //Close the stream.
-        PaError stopError=Pa_CloseStream(&m_stream);
+        PaError stopError=Pa_CloseStream(&m_streamData.stream);
         if(stopError!=paNoError)
         {
             //!FIXME: Set error to "Cannot stop stream".
             return;
         }
         //Move decoder back to the postion 0.
-        if(m_decoder!=nullptr)
+        if(m_streamData.decoder!=nullptr)
         {
-            m_decoder->seek(0);
+            m_streamData.decoder->seek(0);
         }
         //Change the state.
         setPlaybackState(StoppedState);
@@ -129,16 +131,16 @@ void KEPlaybackPortAudio::stop()
 
 int KEPlaybackPortAudio::state() const
 {
-    return m_state;
+    return m_streamData.state;
 }
 
 void KEPlaybackPortAudio::onActionUpdateResample()
 {
     //Check the state is playing state.
-    if(m_state==PlayingState)
+    if(m_streamData.state==PlayingState)
     {
         //Close the current stream.
-        Pa_CloseStream(m_stream);
+        Pa_CloseStream(m_streamData.stream);
         //Restart a stream to apply the new resample settings.
         startDefaultStream();
     }
@@ -147,13 +149,13 @@ void KEPlaybackPortAudio::onActionUpdateResample()
 void KEPlaybackPortAudio::decodeAndPlay()
 {
     //Get the output data.
-    KEAudioBufferData outputBuffer=m_decoder->decodeData();
-    while(!outputBuffer.data.isEmpty() && m_state==PlayingState)
+    KEAudioBufferData outputBuffer=m_streamData.decoder->decodeData();
+    while(!outputBuffer.data.isEmpty() && m_streamData.state==PlayingState)
     {
         //Update the position, timestamp is the position.
         emit positionChanged(outputBuffer.timestamp);
         //Write it to output device, according to the information.
-        PaError writeError=Pa_WriteStream(m_stream,
+        PaError writeError=Pa_WriteStream(m_streamData.stream,
                                           outputBuffer.data.constData(),
                                           outputBuffer.frameCount);
         //Check if there's any error.
@@ -162,7 +164,7 @@ void KEPlaybackPortAudio::decodeAndPlay()
             qDebug()<<Pa_GetErrorText(writeError);
         }
         //Get the next buffer.
-        outputBuffer=m_decoder->decodeData();
+        outputBuffer=m_streamData.decoder->decodeData();
         //Ask thread to do other things.
         QApplication::processEvents();
     }
@@ -171,7 +173,7 @@ void KEPlaybackPortAudio::decodeAndPlay()
 inline bool KEPlaybackPortAudio::startDefaultStream()
 {
     //Initial the stream according to the decoder.
-    PaError streamError=Pa_OpenDefaultStream(&m_stream,
+    PaError streamError=Pa_OpenDefaultStream(&m_streamData.stream,
                                              0,
                                              m_portAudioGlobal->outputChannels(),
                                              m_portAudioGlobal->sampleFormat(),
@@ -184,16 +186,14 @@ inline bool KEPlaybackPortAudio::startDefaultStream()
     {
         return false;
     }
-    //Save the output latency.
-    m_outputLatency=Pa_GetStreamInfo(m_stream)->outputLatency;
     //Start the stream.
-    return (paNoError==Pa_StartStream(m_stream));
+    return (paNoError==Pa_StartStream(m_streamData.stream));
 }
 
 inline void KEPlaybackPortAudio::setPlaybackState(const int &state)
 {
     //Save the state.
-    m_state=state;
+    m_streamData.state=state;
     //Emit state changed signal.
-    emit stateChanged(m_state);
+    emit stateChanged(m_streamData.state);
 }

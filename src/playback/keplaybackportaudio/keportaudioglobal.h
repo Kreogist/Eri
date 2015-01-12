@@ -20,9 +20,23 @@
 
 #include <QHash>
 
+#include "kedecoderbase.h"
+
 #include "portaudio.h"
 
 #include <QObject>
+
+namespace KEPortAudio
+{
+struct KEPortAudioStream
+{
+    KEDecoderBase *decoder;
+    PaStream *stream=nullptr;
+    int state;
+};
+}
+
+using namespace KEPortAudio;
 
 class KEGlobal;
 class KEPortAudioGlobal : public QObject
