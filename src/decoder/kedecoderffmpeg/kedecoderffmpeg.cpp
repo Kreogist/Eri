@@ -43,11 +43,11 @@ KEDecoderFfmpeg::~KEDecoderFfmpeg()
     //Free the format context memory.
     avformat_free_context(m_formatContext);
     //Free the audio buffer.
-    if(m_audioBuffer)
+    if(m_audioBuffer[0])
     {
-        av_freep(m_audioBuffer[0]);
+        av_freep(&m_audioBuffer[0]);
     }
-    av_freep(m_audioBuffer);
+    av_freep(&m_audioBuffer);
 }
 
 bool KEDecoderFfmpeg::reset()
