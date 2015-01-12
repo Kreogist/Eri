@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QThread>
+#include <QSlider>
 
 #include "keplayer.h"
 
@@ -35,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QPushButton *buttonStop1=new QPushButton("Stop", this);
     connect(buttonStop1, SIGNAL(clicked()), this, SLOT(stop1()));
     buttons1->addWidget(buttonStop1);
+    QSlider *progress=new QSlider(Qt::Horizontal, this);
+    controlCenter->addWidget(progress);
 
     QBoxLayout *buttons2=new QBoxLayout(QBoxLayout::LeftToRight,
                                         controlCenter->widget());
@@ -55,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_player1=new KEPlayer(this);
     m_player1->setDecoder(new KEDecoderFfmpeg);
     m_player1->setPlayback(new KEPlaybackPortAudio);
+    connect(m_player1, &KEPlayer::durationChanged, [=](const qint64 &duration){progress->setRange(0, duration);});
+    connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){progress->setValue(position);});
 
     m_player2=new KEPlayer(this);
     m_player2->setDecoder(new KEDecoderFfmpeg);

@@ -24,10 +24,20 @@ void KEPortAudioPayload::decodeAndPlay(KEPortAudioStream *streamData,
 {
     //Get the output data.
     KEAudioBufferData outputBuffer=streamData->decoder->decodeData();
-    while(!outputBuffer.data.isEmpty() && streamData->state==PlayingState)
+    while(streamData->state==PlayingState)
     {
+        //Check is data empty.
+        if(outputBuffer.data.isEmpty())
+        {
+            //This means that there's no more data we need to play.
+            //Reach end of file.
+            //Emit finished signal.
+            emit playback->finished();
+            //Finished!
+            break;
+        }
         //Update the position, timestamp is the position.
-        playback->positionChanged(outputBuffer.timestamp);
+        emit playback->positionChanged(outputBuffer.timestamp);
         //Write it to output device, according to the information.
         PaError writeError=Pa_WriteStream(streamData->stream,
                                           outputBuffer.data.constData(),

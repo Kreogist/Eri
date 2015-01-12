@@ -38,6 +38,7 @@ public:
 
 signals:
     void stateChanged(int state);
+    void finished();
     void positionChanged(int position);
 
 public slots:

@@ -24,7 +24,7 @@ namespace Eri
 {
 struct KEAudioBufferData
 {
-    int timestamp;
+    qint64 timestamp;
     int frameCount;
     QByteArray data;
 };
@@ -49,7 +49,6 @@ enum KEPlayerStates
 enum KEMusicStates
 {
     NoMusic,
-    LoadingMusic,
     LoadedMusic,
     BufferingMusic,
     BufferedMusic,

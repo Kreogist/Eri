@@ -37,6 +37,7 @@ public:
     //Informations.
     virtual int bufferSize()=0;
     virtual int sampleRate()=0;
+    virtual int duration()=0;
 
     //Operates
     virtual bool seek(const qint64 &position)=0;

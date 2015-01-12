@@ -41,19 +41,22 @@ public:
     int state();
     int bufferSize();
     int sampleRate();
+    int duration();
     bool seek(const qint64 &position);
 
 private:
     bool parseFormatContext();
     KEFfmpegGlobal *m_ffmpegGlobal;
-    SwrContext *m_resampleContext=NULL;
-    AVFormatContext *m_formatContext=NULL;
-    AVCodecContext *m_codecContext;
-    AVCodec *m_decoder;
-    quint8 *m_audioBuffer;
+    SwrContext *m_resampleContext=nullptr;
+    AVFormatContext *m_formatContext=nullptr;
+    AVCodecContext *m_codecContext=nullptr;
+    AVCodec *m_codec=nullptr;
+    quint8 **m_audioBuffer;
     QFileInfo m_currentFileInfo;
     int m_audioStreamIndex=-1;
     int m_audioFrameSize=0;
+    int dst_nb_samples;
+    double m_timeBase=1.0;
 };
 
 #endif // KEDECODERFFMPEG_H

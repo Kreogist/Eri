@@ -65,7 +65,10 @@ inline void KEPlayer::loadLocalFile(const QString &filePath)
     }
     if(m_decoder!=nullptr)
     {
-        m_decoder->loadLocalFile(filePath);
+        if(m_decoder->loadLocalFile(filePath))
+        {
+            emit durationChanged(m_decoder->duration());
+        }
     }
 }
 
@@ -119,6 +122,12 @@ void KEPlayer::setPlayback(KEPlaybackBase *playback)
         m_playbackHandler->addConnectionHandle(
                     connect(m_playback, &KEPlaybackBase::stateChanged,
                             this, &KEPlayer::playingStateChanged));
+        m_playbackHandler->addConnectionHandle(
+                    connect(m_playback, &KEPlaybackBase::positionChanged,
+                            this, &KEPlayer::positionChanged));
+        m_playbackHandler->addConnectionHandle(
+                    connect(m_playback, &KEPlaybackBase::finished,
+                            this, &KEPlayer::finished));
         //Set the decoder to playback.
         m_playback->setDecoder(m_decoder);
     }
