@@ -34,12 +34,11 @@ public:
     virtual void start()=0;
     virtual void pause()=0;
     virtual void stop()=0;
+    virtual int state() const=0;
 
 signals:
-    void playNextPacket();
-
-protected slots:
-    virtual void onActionPlayNextPacket()=0;
+    void stateChanged(int state);
+    void positionChanged(int position);
 
 public slots:
 };

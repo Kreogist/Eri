@@ -118,7 +118,6 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
     av_init_packet(&packet);
     while(av_read_frame(m_formatContext, &packet)>=0)
     {
-//        qDebug()<<packet.size;
         //Ensure that the stream is audio stream.
         if(packet.stream_index==m_audioStreamIndex)
         {
@@ -143,7 +142,6 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
                 buffer.frameCount=audioFrame->nb_samples;
                 //First frame's timestamp.
                 buffer.timestamp=audioFrame->pkt_pts;
-//                buffer.timestamp=audioFrame->sample_rate;
                 //Buffer raw data.
                 buffer.data=QByteArray((char *)m_audioBuffer,
                                        m_audioFrameSize);

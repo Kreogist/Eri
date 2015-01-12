@@ -33,21 +33,25 @@ public:
     void start();
     void pause();
     void stop();
+    int state() const;
 
-protected slots:
-    void onActionPlayNextPacket();
+signals:
 
 private slots:
     void onActionUpdateResample();
 
 private:
-    inline void startDefaultStream();
-    KEPortAudioGlobal *m_portAudioGlobal;
+    void decodeAndPlay();
+    inline bool startDefaultStream();
+    inline void setPlaybackState(const int &state);
+
     KEDecoderBase *m_decoder=nullptr;
 
+    int m_state=StoppedState;
+
+    KEPortAudioGlobal *m_portAudioGlobal;
     PaStream *m_stream=NULL;
     PaTime m_outputLatency;
-    int m_state=StoppedState;
 };
 
 #endif // KEPLAYBACKPORTAUDIO_H

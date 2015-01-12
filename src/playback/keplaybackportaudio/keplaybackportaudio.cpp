@@ -15,6 +15,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
+#include <QApplication>
+#include <QThreadPool>
+
 #include "keplaybackportaudio.h"
 
 #include "knconnectionhandler.h"
@@ -29,9 +32,6 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
     //Link resample update.
     connect(m_portAudioGlobal, &KEPortAudioGlobal::requireUpdateResample,
             this, &KEPlaybackPortAudio::onActionUpdateResample);
-    //Link the play loop.
-    connect(this, &KEPlaybackPortAudio::playNextPacket,
-            this, &KEPlaybackPortAudio::onActionPlayNextPacket);
 }
 
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
@@ -75,28 +75,34 @@ bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
 
 void KEPlaybackPortAudio::start()
 {
-    //Check the state
-    //If state is StateNoFile or it is already started, exit directly.
+    //Check the state first.
+    //If state is PlayingState already or decoder is NULL, exit directly.
     if(m_state==PlayingState || m_decoder==nullptr)
     {
         return;
     }
-    //Reset the play state to state playing.
-    m_state=PlayingState;
     //Open the default stream to current stream.
     startDefaultStream();
-    //Emit play signal.
-    emit playNextPacket();
+    //Change the state.
+    setPlaybackState(PlayingState);
+    //Do the payload.
+    decodeAndPlay();
 }
 
 void KEPlaybackPortAudio::pause()
 {
+    //Check the state.
     if(m_state!=PausedState)
     {
-        //Set state to pause.
-        m_state=PausedState;
         //Close the stream.
-        Pa_CloseStream(&m_stream);
+        PaError pauseError=Pa_CloseStream(&m_stream);
+        if(pauseError!=paNoError)
+        {
+            //!FIXME: Set error to "Cannot pause stream".
+            return;
+        }
+        //Change the state.
+        setPlaybackState(PausedState);
     }
 }
 
@@ -104,58 +110,65 @@ void KEPlaybackPortAudio::stop()
 {
     if(m_state!=StoppedState)
     {
-        //Set state to stop.
-        m_state=StoppedState;
         //Close the stream.
-        Pa_CloseStream(&m_stream);
+        PaError stopError=Pa_CloseStream(&m_stream);
+        if(stopError!=paNoError)
+        {
+            //!FIXME: Set error to "Cannot stop stream".
+            return;
+        }
         //Move decoder back to the postion 0.
         if(m_decoder!=nullptr)
         {
             m_decoder->seek(0);
         }
+        //Change the state.
+        setPlaybackState(StoppedState);
     }
 }
 
-void KEPlaybackPortAudio::onActionPlayNextPacket()
+int KEPlaybackPortAudio::state() const
 {
-    //Check the state and decoder at very beginning.
-    if(m_state!=PlayingState || m_decoder==nullptr)
-    {
-        return;
-    }
-    //Get the output data.
-    KEAudioBufferData outputBuffer=m_decoder->decodeData();
-    if(outputBuffer.data.isEmpty())
-    {
-        stop();
-        return;
-    }
-    //Write it to output device, according to the information.
-    PaError writeError=Pa_WriteStream(m_stream,
-                                      outputBuffer.data.constData(),
-                                      outputBuffer.frameCount);
-    //Check if there's any error.
-    if(writeError!=paNoError)
-    {
-        qDebug()<<Pa_GetErrorText(writeError);
-    }
-    //Ask to play the next packet.
-    emit playNextPacket();
+    return m_state;
 }
 
 void KEPlaybackPortAudio::onActionUpdateResample()
 {
-    //Check the state.
+    //Check the state is playing state.
     if(m_state==PlayingState)
     {
         //Close the current stream.
         Pa_CloseStream(m_stream);
-        //Restart a stream.
+        //Restart a stream to apply the new resample settings.
         startDefaultStream();
     }
 }
 
-inline void KEPlaybackPortAudio::startDefaultStream()
+void KEPlaybackPortAudio::decodeAndPlay()
+{
+    //Get the output data.
+    KEAudioBufferData outputBuffer=m_decoder->decodeData();
+    while(!outputBuffer.data.isEmpty() && m_state==PlayingState)
+    {
+        //Update the position, timestamp is the position.
+        emit positionChanged(outputBuffer.timestamp);
+        //Write it to output device, according to the information.
+        PaError writeError=Pa_WriteStream(m_stream,
+                                          outputBuffer.data.constData(),
+                                          outputBuffer.frameCount);
+        //Check if there's any error.
+        if(writeError!=paNoError)
+        {
+            qDebug()<<Pa_GetErrorText(writeError);
+        }
+        //Get the next buffer.
+        outputBuffer=m_decoder->decodeData();
+        //Ask thread to do other things.
+        QApplication::processEvents();
+    }
+}
+
+inline bool KEPlaybackPortAudio::startDefaultStream()
 {
     //Initial the stream according to the decoder.
     PaError streamError=Pa_OpenDefaultStream(&m_stream,
@@ -169,10 +182,18 @@ inline void KEPlaybackPortAudio::startDefaultStream()
     //Check the error.
     if(streamError!=paNoError)
     {
-        return;
+        return false;
     }
     //Save the output latency.
     m_outputLatency=Pa_GetStreamInfo(m_stream)->outputLatency;
     //Start the stream.
-    Pa_StartStream(m_stream);
+    return (paNoError==Pa_StartStream(m_stream));
+}
+
+inline void KEPlaybackPortAudio::setPlaybackState(const int &state)
+{
+    //Save the state.
+    m_state=state;
+    //Emit state changed signal.
+    emit stateChanged(m_state);
 }

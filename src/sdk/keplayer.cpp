@@ -17,6 +17,8 @@
  */
 #include <QThread>
 
+#include "knconnectionhandler.h"
+
 #include "kedecoderbase.h"
 #include "keplaybackbase.h"
 
@@ -27,9 +29,9 @@
 KEPlayer::KEPlayer(QObject *parent) :
     QObject(parent),
     m_musicState(NoMusic),
-    m_playingState(StoppedState),
     m_playbackThread(new QThread(this)),
-    m_decoderThread(new QThread(this))
+    m_decoderThread(new QThread(this)),
+    m_playbackHandler(new KNConnectionHandler(this))
 {
     //Start the thread right now.
     m_playbackThread->start();
@@ -67,14 +69,6 @@ inline void KEPlayer::loadLocalFile(const QString &filePath)
     }
 }
 
-void KEPlayer::setPlayingState(const int &playingState)
-{
-    //Save the state.
-    m_musicState=playingState;
-    //Emit playing state changed signal.
-    emit playingStateChanged(m_musicState);
-}
-
 int KEPlayer::musicState() const
 {
     return m_musicState;
@@ -82,7 +76,8 @@ int KEPlayer::musicState() const
 
 int KEPlayer::playingState() const
 {
-    return m_playingState;
+    //Return StoppedState if playback is null.
+    return m_playback==nullptr?StoppedState:m_playback->state();
 }
 
 KEDecoderBase *KEPlayer::decoder() const
@@ -108,61 +103,54 @@ KEPlaybackBase *KEPlayer::playback() const
 
 void KEPlayer::setPlayback(KEPlaybackBase *playback)
 {
+    //Check the playback is null or not.
+    if(m_playback!=nullptr)
+    {
+        //Disconnect playbacks signals.
+        m_playbackHandler->disconnectAll();
+    }
     //Save the playback, and move to playback thread.
     m_playback=playback;
-    m_playback->moveToThread(m_playbackThread);
-    //Set the decoder to playback.
-    m_playback->setDecoder(m_decoder);
+    if(m_playback!=nullptr)
+    {
+        //Move to working thread.
+        m_playback->moveToThread(m_playbackThread);
+        //Link the playback.
+        m_playbackHandler->addConnectionHandle(
+                    connect(m_playback, &KEPlaybackBase::stateChanged,
+                            this, &KEPlayer::playingStateChanged));
+        //Set the decoder to playback.
+        m_playback->setDecoder(m_decoder);
+    }
 }
 
 void KEPlayer::play()
 {
-    //Check is current state is PlayingState or not.
-    if(m_playingState==PlayingState)
-    {
-        return;
-    }
-    //Check if playback is null.
-    if(m_playback!=nullptr)
+    //Check if playback is null, and current state is PlayingState or not.
+    if(m_playback!=nullptr && m_playback->state()!=PlayingState)
     {
         //Start play.
         m_playback->start();
-        //Change the playing state.
-        setPlayingState(PlayingState);
     }
 }
 
 void KEPlayer::pause()
 {
-    //Check is current state is PausedState or not.
-    if(m_playingState==PausedState)
-    {
-        return;
-    }
-    //Check if playback is null.
-    if(m_playback!=nullptr)
+    //Check if playback is null, and current state is PausedState or not.
+    if(m_playback!=nullptr && m_playback->state()!=PausedState)
     {
         //Pause the play back.
         m_playback->pause();
-        //Change the playing state.
-        setPlayingState(PausedState);
     }
 }
 
 void KEPlayer::stop()
 {
-    //Check is current state is StoppedState or not.
-    if(m_playingState==StoppedState)
-    {
-        return;
-    }
-    //Check if playback is null.
-    if(m_playback!=nullptr)
+    //Check if playback is null, and current state is StoppedState or not.
+    if(m_playback!=nullptr && m_playback->state()==StoppedState)
     {
         //Stop the playback.
         m_playback->stop();
-        //Change the playing state.
-        setPlayingState(StoppedState);
     }
 }
 

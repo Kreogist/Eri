@@ -26,6 +26,7 @@
 
 class KEDecoderBase;
 class KEPlaybackBase;
+class KNConnectionHandler;
 class KEPlayer : public QObject
 {
     Q_OBJECT
@@ -64,18 +65,15 @@ private:
     //Load different kinds of file.
     inline void loadLocalFile(const QString &filePath);
 
-    //Set the state.
-    inline void setPlayingState(const int &playingState);
-
     //Music player state variables.
     QUrl m_musicUrl;
     int m_musicState;
-    int m_playingState;
 
     //Decoder, playback and their threds.
     KEDecoderBase *m_decoder=nullptr;
     KEPlaybackBase *m_playback=nullptr;
     QThread *m_decoderThread, *m_playbackThread;
+    KNConnectionHandler *m_playbackHandler;
 
 };
 
