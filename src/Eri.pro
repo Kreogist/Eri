@@ -42,7 +42,7 @@ SOURCES += \
     sdk/knconnectionhandler.cpp \
     mainwindow.cpp \
     sdk/keplayer.cpp \
-    playback/keplaybackportaudio/keplaybackpayload.cpp
+    playback/keplaybackportaudio/keportaudiopayload.cpp
 
 HEADERS += \
     sdk/keglobal.h \
@@ -51,4 +51,4 @@ HEADERS += \
     sdk/knconnectionhandler.h \
     mainwindow.h \
     sdk/keplayer.h \
-    playback/keplaybackportaudio/keplaybackpayload.h
+    playback/keplaybackportaudio/keportaudiopayload.h

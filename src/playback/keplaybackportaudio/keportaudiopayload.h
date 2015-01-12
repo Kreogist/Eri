@@ -15,41 +15,28 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEPLAYBACKPORTAUDIO_H
-#define KEPLAYBACKPORTAUDIO_H
-
-#include <QFuture>
+#ifndef KEPLAYBACKPAYLOAD_H
+#define KEPLAYBACKPAYLOAD_H
 
 #include "keportaudioglobal.h"
-
 #include "keplaybackbase.h"
 
-class KEPlaybackPortAudio : public KEPlaybackBase
+#include <QObject>
+
+class KEPortAudioPayload : public QObject
 {
     Q_OBJECT
 public:
-    explicit KEPlaybackPortAudio(QObject *parent = 0);
-    ~KEPlaybackPortAudio();
-    void reset();
-    bool setDecoder(KEDecoderBase *decoder);
-    void start();
-    void pause();
-    void stop();
-    int state() const;
+    static void decodeAndPlay(KEPortAudioStream *streamData,
+                              KEPlaybackBase *playback);
+    explicit KEPortAudioPayload(QObject *parent = 0);
+    ~KEPortAudioPayload();
 
 signals:
 
-private slots:
-    void onActionUpdateResample();
+public slots:
 
 private:
-    inline bool startDefaultStream();
-    inline void setPlaybackState(const int &state);
-
-    KEPortAudioGlobal *m_portAudioGlobal;
-    KEPortAudioStream m_streamData;
-
-    QFuture<void> m_playingPayload;
 };
 
-#endif // KEPLAYBACKPORTAUDIO_H
+#endif // KEPLAYBACKPAYLOAD_H

@@ -147,7 +147,7 @@ void KEPlayer::pause()
 void KEPlayer::stop()
 {
     //Check if playback is null, and current state is StoppedState or not.
-    if(m_playback!=nullptr && m_playback->state()==StoppedState)
+    if(m_playback!=nullptr && m_playback->state()!=StoppedState)
     {
         //Stop the playback.
         m_playback->stop();

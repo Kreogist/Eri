@@ -17,8 +17,10 @@
  */
 #include <QApplication>
 #include <QThreadPool>
+#include <QtConcurrent/QtConcurrent>
 
 #include "keplaybackportaudio.h"
+#include "keportaudiopayload.h"
 
 #include "knconnectionhandler.h"
 
@@ -39,8 +41,8 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
 {
     blockSignals(true);
-    //Force close the stream.
-    Pa_CloseStream(m_streamData.stream);
+    //Stop the stream.
+    stop();
 }
 
 void KEPlaybackPortAudio::reset()
@@ -88,7 +90,7 @@ void KEPlaybackPortAudio::start()
     //Change the state.
     setPlaybackState(PlayingState);
     //Do the payload.
-    decodeAndPlay();
+    m_playingPayload=QtConcurrent::run(KEPortAudioPayload::decodeAndPlay, &m_streamData, this);
 }
 
 void KEPlaybackPortAudio::pause()
@@ -96,15 +98,19 @@ void KEPlaybackPortAudio::pause()
     //Check the state.
     if(m_streamData.state!=PausedState)
     {
+        //Change the state.
+        m_streamData.state=PausedState;
+        //Wating for pay load finished playing.
+        m_playingPayload.waitForFinished();
         //Close the stream.
-        PaError pauseError=Pa_CloseStream(&m_streamData.stream);
+        PaError pauseError=Pa_CloseStream(m_streamData.stream);
         if(pauseError!=paNoError)
         {
             //!FIXME: Set error to "Cannot pause stream".
             return;
         }
-        //Change the state.
-        setPlaybackState(PausedState);
+        //Emit changed signal.
+        emit stateChanged(m_streamData.state);
     }
 }
 
@@ -112,20 +118,25 @@ void KEPlaybackPortAudio::stop()
 {
     if(m_streamData.state!=StoppedState)
     {
+        //Change the state.
+        m_streamData.state=StoppedState;
+        //Wating for pay load finished playing.
+        m_playingPayload.waitForFinished();
         //Close the stream.
-        PaError stopError=Pa_CloseStream(&m_streamData.stream);
-        if(stopError!=paNoError)
+        PaError stopError=Pa_CloseStream(m_streamData.stream);
+        if(paNoError!=stopError)
         {
-            //!FIXME: Set error to "Cannot stop stream".
+            //Output error.
+            qDebug()<<Pa_GetErrorText(stopError);
             return;
         }
-        //Move decoder back to the postion 0.
+        //Seek back to 0.
         if(m_streamData.decoder!=nullptr)
         {
             m_streamData.decoder->seek(0);
         }
-        //Change the state.
-        setPlaybackState(StoppedState);
+        //Emit changed signal.
+        emit stateChanged(m_streamData.state);
     }
 }
 
@@ -143,30 +154,6 @@ void KEPlaybackPortAudio::onActionUpdateResample()
         Pa_CloseStream(m_streamData.stream);
         //Restart a stream to apply the new resample settings.
         startDefaultStream();
-    }
-}
-
-void KEPlaybackPortAudio::decodeAndPlay()
-{
-    //Get the output data.
-    KEAudioBufferData outputBuffer=m_streamData.decoder->decodeData();
-    while(!outputBuffer.data.isEmpty() && m_streamData.state==PlayingState)
-    {
-        //Update the position, timestamp is the position.
-        emit positionChanged(outputBuffer.timestamp);
-        //Write it to output device, according to the information.
-        PaError writeError=Pa_WriteStream(m_streamData.stream,
-                                          outputBuffer.data.constData(),
-                                          outputBuffer.frameCount);
-        //Check if there's any error.
-        if(writeError!=paNoError)
-        {
-            qDebug()<<Pa_GetErrorText(writeError);
-        }
-        //Get the next buffer.
-        outputBuffer=m_streamData.decoder->decodeData();
-        //Ask thread to do other things.
-        QApplication::processEvents();
     }
 }
 
