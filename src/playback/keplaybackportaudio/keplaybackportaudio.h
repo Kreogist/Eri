@@ -43,7 +43,7 @@ private slots:
     void onActionUpdateResample();
 
 private:
-    inline bool startDefaultStream();
+    inline bool openDefaultStream();
     inline void setPlaybackState(const int &state);
 
     KEPortAudioGlobal *m_portAudioGlobal;

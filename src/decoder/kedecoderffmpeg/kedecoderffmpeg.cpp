@@ -79,8 +79,6 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
 {
     //Reset the thread.
     reset();
-    //Initial the decoder format context.
-    m_formatContext=avformat_alloc_context();
     //Check the file is exist or not.
     QFileInfo fileCheck(filePath);
     if(!fileCheck.exists())
@@ -93,6 +91,9 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
 
     //Load the file.
     std::string stdFilePath=QDir::toNativeSeparators(fileCheck.absoluteFilePath()).toStdString();
+    //Initial the decoder format context.
+    m_formatContext=avformat_alloc_context();
+    //Open the format context.
     if(avformat_open_input(&m_formatContext,
                            stdFilePath.data(),
                            NULL,
@@ -152,7 +153,6 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
                 return buffer;
             }
         }
-        qDebug()<<"Here?!";
         av_free_packet(&packet);
     }
     av_free_packet(&packet);

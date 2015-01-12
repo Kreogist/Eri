@@ -29,8 +29,8 @@
 KEPlayer::KEPlayer(QObject *parent) :
     QObject(parent),
     m_musicState(NoMusic),
-    m_playbackThread(new QThread(this)),
     m_decoderThread(new QThread(this)),
+    m_playbackThread(new QThread(this)),
     m_playbackHandler(new KNConnectionHandler(this))
 {
     //Start the thread right now.
@@ -161,7 +161,12 @@ void KEPlayer::loadUrl(const QUrl &url)
     //Check the url type and play the music.
     if(m_musicUrl.isLocalFile())
     {
-        loadLocalFile(m_musicUrl.path());
+        QString localFilePath=m_musicUrl.path();
+#ifdef Q_OS_WIN32
+        //Remove the first '/'.
+        localFilePath.remove(0, 1);
+#endif
+        loadLocalFile(localFilePath);
     }
 }
 

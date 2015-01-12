@@ -49,20 +49,15 @@ void KEPlaybackPortAudio::reset()
 {
     //Block all the signals.
     blockSignals(true);
-    //Reset the state.
-    m_streamData.state=StoppedState;
+    //Stop the thread.
+    stop();
     //Free the stream.
-    if(m_streamData.stream!=NULL)
+    if(m_streamData.stream!=nullptr)
     {
-        //Stop the stream if it's still activated.
-        if(!Pa_IsStreamStopped(m_streamData.stream))
-        {
-            Pa_StopStream(m_streamData.stream);
-        }
         //Close the stream.
-        Pa_CloseStream(m_streamData.stream);
+        Pa_AbortStream(m_streamData.stream);
         //Reset the stream data.
-        m_streamData.stream=NULL;
+        m_streamData.stream=nullptr;
     }
     //Release the signal blocks.
     blockSignals(false);
@@ -85,8 +80,13 @@ void KEPlaybackPortAudio::start()
     {
         return;
     }
-    //Open the default stream to current stream.
-    startDefaultStream();
+    if(m_streamData.stream==nullptr)
+    {
+        //Open the default stream to current stream.
+        openDefaultStream();
+    }
+    //Start the stream.
+    Pa_StartStream(m_streamData.stream);
     //Change the state.
     setPlaybackState(PlayingState);
     //Do the payload.
@@ -96,14 +96,14 @@ void KEPlaybackPortAudio::start()
 void KEPlaybackPortAudio::pause()
 {
     //Check the state.
-    if(m_streamData.state!=PausedState)
+    if(m_streamData.state!=PausedState && m_streamData.state!=StoppedState)
     {
         //Change the state.
         m_streamData.state=PausedState;
         //Wating for pay load finished playing.
         m_playingPayload.waitForFinished();
         //Close the stream.
-        PaError pauseError=Pa_CloseStream(m_streamData.stream);
+        PaError pauseError=Pa_AbortStream(m_streamData.stream);
         if(pauseError!=paNoError)
         {
             //!FIXME: Set error to "Cannot pause stream".
@@ -122,14 +122,20 @@ void KEPlaybackPortAudio::stop()
         m_streamData.state=StoppedState;
         //Wating for pay load finished playing.
         m_playingPayload.waitForFinished();
-        //Close the stream.
-        PaError stopError=Pa_CloseStream(m_streamData.stream);
-        if(paNoError!=stopError)
+        //If the stream is active, then abort it.
+        if(Pa_IsStreamActive(m_streamData.stream)==1)
         {
-            //Output error.
-            qDebug()<<Pa_GetErrorText(stopError);
-            return;
+            //Close the stream.
+            PaError stopError=Pa_AbortStream(m_streamData.stream);
+            if(paNoError!=stopError)
+            {
+                //Output error.
+                qDebug()<<Pa_GetErrorText(stopError);
+                return;
+            }
         }
+        //Reset the stream data.
+        m_streamData.stream=nullptr;
         //Seek back to 0.
         if(m_streamData.decoder!=nullptr)
         {
@@ -151,13 +157,15 @@ void KEPlaybackPortAudio::onActionUpdateResample()
     if(m_streamData.state==PlayingState)
     {
         //Close the current stream.
-        Pa_CloseStream(m_streamData.stream);
+        Pa_AbortStream(m_streamData.stream);
         //Restart a stream to apply the new resample settings.
-        startDefaultStream();
+        openDefaultStream();
+        //Start the stream.
+        Pa_StartStream(m_streamData.stream);
     }
 }
 
-inline bool KEPlaybackPortAudio::startDefaultStream()
+inline bool KEPlaybackPortAudio::openDefaultStream()
 {
     //Initial the stream according to the decoder.
     PaError streamError=Pa_OpenDefaultStream(&m_streamData.stream,
@@ -169,12 +177,7 @@ inline bool KEPlaybackPortAudio::startDefaultStream()
                                              NULL,
                                              NULL);
     //Check the error.
-    if(streamError!=paNoError)
-    {
-        return false;
-    }
-    //Start the stream.
-    return (paNoError==Pa_StartStream(m_streamData.stream));
+    return (paNoError==streamError);
 }
 
 inline void KEPlaybackPortAudio::setPlaybackState(const int &state)
