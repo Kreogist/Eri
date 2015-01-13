@@ -127,7 +127,7 @@ void KEPlayer::setPlayback(KEPlaybackBase *playback)
                             this, &KEPlayer::positionChanged));
         m_playbackHandler->addConnectionHandle(
                     connect(m_playback, &KEPlaybackBase::finished,
-                            this, &KEPlayer::finished));
+                            this, &KEPlayer::onActionPlaybackFinished));
         //Set the decoder to playback.
         m_playback->setDecoder(m_decoder);
     }
@@ -181,10 +181,24 @@ void KEPlayer::loadUrl(const QUrl &url)
 
 void KEPlayer::setPosition(qint64 position)
 {
-    ;
+    //Seek back to 0.
+    if(m_decoder!=nullptr)
+    {
+        m_decoder->seek(position);
+    }
 }
 
 void KEPlayer::setVolume(int volume)
 {
     ;
+}
+
+void KEPlayer::onActionPlaybackFinished()
+{
+    //Emit the position changed signal.
+    emit positionChanged(m_decoder->duration());
+    //Emit finished signal.
+    emit finished();
+    //Stop.
+    stop();
 }

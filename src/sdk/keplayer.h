@@ -61,6 +61,9 @@ public slots:
     void setPosition(qint64 position);
     void setVolume(int volume);
 
+private slots:
+    void onActionPlaybackFinished();
+
 private:
     //Load different kinds of file.
     inline void loadLocalFile(const QString &filePath);

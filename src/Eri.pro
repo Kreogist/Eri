@@ -29,9 +29,20 @@ libPortAudio{
     }
     LIBS += -lportaudio
     SOURCES += playback/keplaybackportaudio/keplaybackportaudio.cpp \
-               playback/keplaybackportaudio/keportaudioglobal.cpp
+               playback/keplaybackportaudio/keportaudioglobal.cpp \
+               playback/keplaybackportaudio/keportaudiopayload.cpp
     HEADERS += playback/keplaybackportaudio/keplaybackportaudio.h \
-               playback/keplaybackportaudio/keportaudioglobal.h
+               playback/keplaybackportaudio/keportaudioglobal.h \
+               playback/keplaybackportaudio/keportaudiopayload.h
+}
+
+libOpenAL{
+    DEFINES += ENABLE_OPENAL
+    LIBS += -lOpenAL32
+    SOURCES += playback/keplaybackopenal/keplaybackopenal.cpp \
+               playback/keplaybackopenal/keopenalglobal.cpp
+    HEADERS += playback/keplaybackopenal/keplaybackopenal.h \
+               playback/keplaybackopenal/keopenalglobal.h
 }
 
 SOURCES += \
@@ -41,8 +52,7 @@ SOURCES += \
     sdk/keplaybackbase.cpp \
     sdk/knconnectionhandler.cpp \
     mainwindow.cpp \
-    sdk/keplayer.cpp \
-    playback/keplaybackportaudio/keportaudiopayload.cpp
+    sdk/keplayer.cpp
 
 HEADERS += \
     sdk/keglobal.h \
@@ -50,5 +60,4 @@ HEADERS += \
     sdk/keplaybackbase.h \
     sdk/knconnectionhandler.h \
     mainwindow.h \
-    sdk/keplayer.h \
-    playback/keplaybackportaudio/keportaudiopayload.h
+    sdk/keplayer.h

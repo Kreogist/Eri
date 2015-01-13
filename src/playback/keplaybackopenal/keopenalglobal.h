@@ -15,44 +15,27 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-#ifndef KEPORTAUDIOGLOBAL_H
-#define KEPORTAUDIOGLOBAL_H
+#ifndef KEOPENALGLOBAL_H
+#define KEOPENALGLOBAL_H
 
-#include <QHash>
-
-#include "kedecoderbase.h"
-
-#include "portaudio.h"
+#include <AL/al.h>
+#include <AL/alc.h>
 
 #include <QObject>
 
-namespace KEPortAudio
-{
-struct KEPortAudioStream
-{
-    KEDecoderBase *decoder;
-    PaStream *stream=nullptr;
-    int state;
-};
-}
-
-using namespace KEPortAudio;
-
 class KEGlobal;
-class KEPortAudioGlobal : public QObject
+class KEOpenALGlobal : public QObject
 {
     Q_OBJECT
 public:
-    static KEPortAudioGlobal *instance();
-    ~KEPortAudioGlobal();
+    static KEOpenALGlobal *instance();
+    ~KEOpenALGlobal();
     bool isAvailable();
-    PaStreamParameters *outputParameters();
-    int sampleFormat() const;
+    ALCdevice *currentDevice();
+    ALenum outputFormat();
     int sampleRate() const;
-    int outputChannels() const;
 
 signals:
-    void requireUpdateResample();
 
 public slots:
 
@@ -60,18 +43,21 @@ private slots:
     void onActionResampleUpdate();
 
 private:
-    inline void initialPortAudio();
     inline void initialAudioDevice();
-    static KEPortAudioGlobal *m_instance;
-    explicit KEPortAudioGlobal(QObject *parent = 0);
+    static KEOpenALGlobal *m_instance;
+    explicit KEOpenALGlobal(QObject *parent = 0);
+    KEGlobal *m_global;
+
     //Initialized flag.
     bool m_available=false;
     bool m_initialized=false;
 
-    KEGlobal *m_global;
-    PaStreamParameters m_outputParameters;
-    QHash<int, int> m_sampleFormatMap;
-    int m_sampleFormat;
+    //Available devices.
+    QVector<QByteArray> m_devices;
+    ALCdevice *m_currentDevice;
+
+    //Output format.
+    ALenum m_format=AL_FORMAT_STEREO16;
 };
 
-#endif // KEPORTAUDIOGLOBAL_H
+#endif // KEOPENALGLOBAL_H

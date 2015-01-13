@@ -9,7 +9,12 @@
 
 #include "decoder/kedecoderffmpeg/kedecoderffmpeg.h"
 
+#ifdef ENABLE_PORTAUDIO
 #include "playback/keplaybackportaudio/keplaybackportaudio.h"
+#endif
+#ifdef ENABLE_OPENAL
+#include "playback/keplaybackopenal/keplaybackopenal.h"
+#endif
 
 #include "mainwindow.h"
 
@@ -55,15 +60,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(buttonStop2, SIGNAL(clicked()), this, SLOT(stop2()));
     buttons2->addWidget(buttonStop2);
 
+#ifdef ENABLE_OPENAL
+    KEPlaybackOpenAL *openAL=new KEPlaybackOpenAL(this);
+#endif
+
     m_player1=new KEPlayer(this);
+    m_player2=new KEPlayer(this);
     m_player1->setDecoder(new KEDecoderFfmpeg);
+    m_player2->setDecoder(new KEDecoderFfmpeg);
+#ifdef ENABLE_PORTAUDIO
     m_player1->setPlayback(new KEPlaybackPortAudio);
+    m_player2->setPlayback(new KEPlaybackPortAudio);
+#endif
     connect(m_player1, &KEPlayer::durationChanged, [=](const qint64 &duration){progress->setRange(0, duration);});
     connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){progress->setValue(position);});
 
-    m_player2=new KEPlayer(this);
-    m_player2->setDecoder(new KEDecoderFfmpeg);
-    m_player2->setPlayback(new KEPlaybackPortAudio);
 }
 
 MainWindow::~MainWindow()

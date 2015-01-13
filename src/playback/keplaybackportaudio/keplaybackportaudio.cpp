@@ -143,6 +143,8 @@ void KEPlaybackPortAudio::stop()
         }
         //Emit changed signal.
         emit stateChanged(m_streamData.state);
+        //Emit position changed signal.
+        emit positionChanged(0);
     }
 }
 

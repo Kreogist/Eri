@@ -28,10 +28,6 @@ KEDecoderFfmpeg::KEDecoderFfmpeg(QObject *parent) :
     //Initial the ffmpeg, get ffmpeg global.
     m_ffmpegGlobal=KEFfmpegGlobal::instance();
 
-    //Generate buffer, set the default audio frame size.
-    //The 192000 means 1 second of 32bits 48kHz audio.
-    //To calculate this: means 4bytes(32bits)*48000=192000.
-    m_audioFrameSize=192000;
     //Reset decoder.
     reset();
 }
@@ -43,11 +39,11 @@ KEDecoderFfmpeg::~KEDecoderFfmpeg()
     //Free the format context memory.
     avformat_free_context(m_formatContext);
     //Free the audio buffer.
-    if(m_audioBuffer[0])
+    if(m_audioBuffer!=nullptr)
     {
-        av_freep(&m_audioBuffer[0]);
+        //Free the first buffer.
+        av_free(m_audioBuffer);
     }
-    av_freep(&m_audioBuffer);
 }
 
 bool KEDecoderFfmpeg::reset()
@@ -127,60 +123,77 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
         //Ensure that the stream is audio stream.
         if(packet.stream_index==m_audioStreamIndex)
         {
-            //Decode the audio.
-            int gotFramePointer=0, decodeResult=0;
+            //Generate the decode data.
+            int undecodeSize=packet.size;
+            //Backup the packet data.
+            quint8 *packetData=packet.data;
+            int packetSize=packet.size;
             //Decode the audio data until the packet size.
-            while(decodeResult!=packet.size)
+            while(undecodeSize>0)
             {
-                decodeResult=avcodec_decode_audio4(m_codecContext,
-                                                   audioFrame,
-                                                   &gotFramePointer,
-                                                   &packet);
-            }
-            //Ignore the no used frame.
-            if(gotFramePointer>0)
-            {
-                int current_nb_samples=av_rescale_rnd(swr_get_delay(m_resampleContext, audioFrame->sample_rate) + audioFrame->nb_samples,
-                                                      m_ffmpegGlobal->sampleRate(),
-                                                      audioFrame->sample_rate,
-                                                      AV_ROUND_UP);
-                int dst_linesize;
-                if(current_nb_samples>dst_nb_samples)
+                int gotFramePointer=0,
+                    decodeResult=avcodec_decode_audio4(m_codecContext,
+                                                       audioFrame,
+                                                       &gotFramePointer,
+                                                       &packet);
+                //Check if there's any error happend.
+                if(decodeResult<0)
                 {
-                    av_free(m_audioBuffer[0]);
-                    av_samples_alloc(m_audioBuffer,
-                                     &dst_linesize,
-                                     av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
-                                     current_nb_samples,
-                                     m_ffmpegGlobal->sampleFormat(),
-                                     1);
-                    dst_nb_samples=current_nb_samples;
+                    //!FIXME: Output error text.
+                    break;
                 }
-                //Resampling the data.
-                int ret=swr_convert(m_resampleContext,
-                                    m_audioBuffer,
-                                    dst_nb_samples,
-                                    (const quint8 **)audioFrame->data,
-                                    audioFrame->nb_samples);
-                //Generate the buffer data.
-                KEAudioBufferData buffer;
-                //The frame count.
-                buffer.frameCount=audioFrame->nb_samples;
-                //First frame's timestamp.
-                buffer.timestamp=packet.pts*m_timeBase;
-                //Buffer raw data.
-                buffer.data=QByteArray((char *)m_audioBuffer[0],
-                                       av_samples_get_buffer_size(&dst_linesize,
-                                                                  av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
-                                                                  ret,
-                                                                  m_ffmpegGlobal->sampleFormat(),
-                                                                  1));
-                //Free the packet and frame.
-                av_free_packet(&packet);
-                av_frame_free(&audioFrame);
-                //Return the data.
-                return buffer;
+                //Reduce the deocoded size.
+                undecodeSize-=decodeResult;
+                //Tune the data and the size.
+                packet.data+=decodeResult;
+                packet.size-=decodeResult;
             }
+            //Reset the packet data, avoid memory leak.
+            packet.data=packetData;
+            packet.size=packetSize;
+            //Update resample data.
+            int current_nb_samples=av_rescale_rnd(swr_get_delay(m_resampleContext, audioFrame->sample_rate) + audioFrame->nb_samples,
+                                                  m_ffmpegGlobal->sampleRate(),
+                                                  audioFrame->sample_rate,
+                                                  AV_ROUND_UP);
+            int dst_linesize;
+            if(current_nb_samples>dst_nb_samples)
+            {
+                av_free(m_audioBuffer[0]);
+                av_samples_alloc(m_audioBuffer,
+                                 &dst_linesize,
+                                 av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
+                                 current_nb_samples,
+                                 m_ffmpegGlobal->sampleFormat(),
+                                 1);
+                dst_nb_samples=current_nb_samples;
+            }
+            //Resampling the data.
+            int ret=swr_convert(m_resampleContext,
+                                m_audioBuffer,
+                                dst_nb_samples,
+                                (const quint8 **)audioFrame->extended_data,
+                                audioFrame->nb_samples);
+
+            //Generate the buffer data.
+            KEAudioBufferData buffer;
+            //The frame count.
+            buffer.frameCount=audioFrame->nb_samples;
+            //First frame's timestamp.
+            buffer.timestamp=packet.pts*m_timeBase;
+            //Buffer raw data.
+            buffer.data=QByteArray((char *)m_audioBuffer[0],
+                                   av_samples_get_buffer_size(&dst_linesize,
+                                                              av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
+                                                              ret,
+                                                              m_ffmpegGlobal->sampleFormat(),
+                                                              1));
+            //Free the packet and frame.
+            av_free_packet(&packet);
+            av_frame_free(&audioFrame);
+            //Return the data.
+            return buffer;
+
         }
         av_free_packet(&packet);
     }
