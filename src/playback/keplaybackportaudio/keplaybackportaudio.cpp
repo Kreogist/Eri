@@ -33,9 +33,6 @@ KEPlaybackPortAudio::KEPlaybackPortAudio(QObject *parent) :
     m_portAudioGlobal=KEPortAudioGlobal::instance();
     //Initial the stream data.
     m_streamData.state=StoppedState;
-    //Link resample update.
-    connect(m_portAudioGlobal, &KEPortAudioGlobal::requireUpdateResample,
-            this, &KEPlaybackPortAudio::onActionUpdateResample);
 }
 
 KEPlaybackPortAudio::~KEPlaybackPortAudio()
@@ -61,6 +58,8 @@ void KEPlaybackPortAudio::reset()
     }
     //Release the signal blocks.
     blockSignals(false);
+    //Update the position.
+    positionChanged(0);
 }
 
 bool KEPlaybackPortAudio::setDecoder(KEDecoderBase *decoder)
@@ -131,7 +130,6 @@ void KEPlaybackPortAudio::stop()
             {
                 //Output error.
                 qDebug()<<Pa_GetErrorText(stopError);
-                return;
             }
         }
         //Reset the stream data.
@@ -153,27 +151,13 @@ int KEPlaybackPortAudio::state() const
     return m_streamData.state;
 }
 
-void KEPlaybackPortAudio::onActionUpdateResample()
-{
-    //Check the state is playing state.
-    if(m_streamData.state==PlayingState)
-    {
-        //Close the current stream.
-        Pa_AbortStream(m_streamData.stream);
-        //Restart a stream to apply the new resample settings.
-        openDefaultStream();
-        //Start the stream.
-        Pa_StartStream(m_streamData.stream);
-    }
-}
-
 inline bool KEPlaybackPortAudio::openDefaultStream()
 {
     //Initial the stream according to the decoder.
     PaError streamError=Pa_OpenDefaultStream(&m_streamData.stream,
                                              0,
                                              m_portAudioGlobal->outputChannels(),
-                                             m_portAudioGlobal->sampleFormat(),
+                                             m_portAudioGlobal->getSampleFormat(m_streamData.decoder->sampleFormat()),
                                              m_streamData.decoder->sampleRate(),
                                              0,
                                              NULL,

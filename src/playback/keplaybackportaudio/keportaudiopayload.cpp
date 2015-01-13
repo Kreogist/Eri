@@ -20,7 +20,7 @@
 #include <QDebug>
 
 void KEPortAudioPayload::decodeAndPlay(KEPortAudioStream *streamData,
-                                      KEPlaybackBase *playback)
+                                       KEPlaybackBase *playback)
 {
     //Get the output data.
     KEAudioBufferData outputBuffer=streamData->decoder->decodeData();
@@ -46,6 +46,15 @@ void KEPortAudioPayload::decodeAndPlay(KEPortAudioStream *streamData,
         if(writeError!=paNoError)
         {
             qDebug()<<Pa_GetErrorText(writeError);
+        }
+        //Check the state once more.
+        if(streamData->state!=PlayingState)
+        {
+            if(streamData->state==StoppedState)
+            {
+                emit playback->positionChanged(0);
+            }
+            break;
         }
         //Get the next buffer.
         outputBuffer=streamData->decoder->decodeData();

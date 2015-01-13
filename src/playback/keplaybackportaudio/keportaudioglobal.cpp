@@ -34,8 +34,6 @@ KEPortAudioGlobal::KEPortAudioGlobal(QObject *parent) :
     //If initialize PortAudio successfully, then load the device data.
     if(m_available)
     {
-        //Initial the KEGlobal.
-        m_global=KEGlobal::instance();
         //Initial output parameters.
         initialAudioDevice();
         //Initial the sample format map.
@@ -43,27 +41,12 @@ KEPortAudioGlobal::KEPortAudioGlobal(QObject *parent) :
         m_sampleFormatMap.insert(SampleSignInt16, paInt16);
         m_sampleFormatMap.insert(SampleSignInt32, paInt32);
         m_sampleFormatMap.insert(SampleFloat, paFloat32);
-        //Link the update request.
-        connect(m_global, &KEGlobal::updateResampleConfigure,
-                this, &KEPortAudioGlobal::onActionResampleUpdate);
-        //Update the resample settings.
-        onActionResampleUpdate();
     }
-}
-
-int KEPortAudioGlobal::sampleFormat() const
-{
-    return m_sampleFormat;
-}
-
-int KEPortAudioGlobal::sampleRate() const
-{
-    return m_global->sampleRate();
 }
 
 int KEPortAudioGlobal::outputChannels() const
 {
-    return m_global->channel();
+    return KEGlobal::instance()->channel();
 }
 
 KEPortAudioGlobal::~KEPortAudioGlobal()
@@ -81,12 +64,9 @@ PaStreamParameters *KEPortAudioGlobal::outputParameters()
     return &m_outputParameters;
 }
 
-void KEPortAudioGlobal::onActionResampleUpdate()
+int KEPortAudioGlobal::getSampleFormat(const int &sampleFormat)
 {
-    //Update the sample format.
-    m_sampleFormat=m_sampleFormatMap.value(m_global->sampleFormat());
-    //Emit update signal.
-    emit requireUpdateResample();
+    return m_sampleFormatMap.value(sampleFormat);
 }
 
 inline void KEPortAudioGlobal::initialPortAudio()

@@ -38,7 +38,6 @@ struct KEPortAudioStream
 
 using namespace KEPortAudio;
 
-class KEGlobal;
 class KEPortAudioGlobal : public QObject
 {
     Q_OBJECT
@@ -47,17 +46,14 @@ public:
     ~KEPortAudioGlobal();
     bool isAvailable();
     PaStreamParameters *outputParameters();
-    int sampleFormat() const;
-    int sampleRate() const;
+    int getSampleFormat(const int &sampleFormat);
     int outputChannels() const;
 
 signals:
-    void requireUpdateResample();
 
 public slots:
 
 private slots:
-    void onActionResampleUpdate();
 
 private:
     inline void initialPortAudio();
@@ -68,10 +64,8 @@ private:
     bool m_available=false;
     bool m_initialized=false;
 
-    KEGlobal *m_global;
     PaStreamParameters m_outputParameters;
     QHash<int, int> m_sampleFormatMap;
-    int m_sampleFormat;
 };
 
 #endif // KEPORTAUDIOGLOBAL_H

@@ -39,9 +39,6 @@ public:
 
 signals:
 
-private slots:
-    void onActionUpdateResample();
-
 private:
     inline bool openDefaultStream();
     inline void setPlaybackState(const int &state);

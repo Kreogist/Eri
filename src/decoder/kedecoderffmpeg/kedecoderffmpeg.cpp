@@ -141,6 +141,7 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
                 if(decodeResult<0)
                 {
                     //!FIXME: Output error text.
+                    qDebug()<<"Decode error: "<<decodeResult;
                     break;
                 }
                 //Reduce the deocoded size.
@@ -194,7 +195,6 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
             av_frame_free(&audioFrame);
             //Return the data.
             return buffer;
-
         }
         av_free_packet(&packet);
     }
@@ -225,15 +225,19 @@ quint64 KEDecoderFfmpeg::channelLayout() const
 
 int KEDecoderFfmpeg::sampleFormat() const
 {
-    ;
+    return m_ffmpegGlobal->getSampleFormat(m_sampleFormat);
 }
 
 bool KEDecoderFfmpeg::seek(const qint64 &position)
 {
-    if(m_formatContext==nullptr)
+    //Check the format context and position is available or not.
+    if(m_formatContext==nullptr ||
+            position<0 || position>duration())
     {
         return false;
     }
+    qDebug()<<position;
+    //Seek the frame.
     return (av_seek_frame(m_formatContext,
                           m_audioStreamIndex,
                           position/m_timeBase,

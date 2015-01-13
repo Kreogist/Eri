@@ -61,6 +61,7 @@ inline void KEPlayer::loadLocalFile(const QString &filePath)
     //Reset the playback.
     if(m_playback!=nullptr)
     {
+        //Reset the playback.
         m_playback->reset();
     }
     if(m_decoder!=nullptr)
@@ -69,7 +70,15 @@ inline void KEPlayer::loadLocalFile(const QString &filePath)
         {
             //Update the duration.
             emit durationChanged(m_decoder->duration());
+            //Update the position as well.
+            emit positionChanged(0);
         }
+    }
+    //Reset the playback to stopped state.
+    if(m_playback!=nullptr)
+    {
+        //Reset the playback.
+        m_playback->stop();
     }
 }
 

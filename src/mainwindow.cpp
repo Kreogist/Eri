@@ -75,12 +75,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_player2->setPlayback(new KEPlaybackPortAudio);
 #endif
     connect(m_player1, &KEPlayer::durationChanged, [=](const qint64 &duration){progress1->setRange(0, duration);});
-    connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide1){progress1->setValue(position);}});
+    connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide1){progress1->setValue(position);/*qDebug()<<position;*/}});
     connect(progress1, &QSlider::sliderPressed, [=]{m_slide1=false;});
     connect(progress1, &QSlider::sliderReleased, [=]{m_player1->setPosition(progress1->value());m_slide1=true;});
 
     connect(m_player2, &KEPlayer::durationChanged, [=](const qint64 &duration){progress2->setRange(0, duration);});
-    connect(m_player2, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide2){progress2->setValue(position);}});
+    connect(m_player2, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide2){progress2->setValue(position);/*qDebug()<<position;*/}});
     connect(progress2, &QSlider::sliderPressed, [=]{m_slide2=false;});
     connect(progress2, &QSlider::sliderReleased, [=]{m_player2->setPosition(progress2->value());m_slide2=true;});
 }
