@@ -25,6 +25,7 @@ public slots:
 
 private:
     KEPlayer *m_player1, *m_player2;
+    bool m_slide1=true,  m_slide2=true;
 };
 
 #endif // MAINWINDOW_H

@@ -27,6 +27,8 @@ extern "C"
 #include <libswresample/swresample.h>
 }
 
+#include <QHash>
+
 #include <QObject>
 
 class KEFfmpegGlobal : public QObject
@@ -35,11 +37,9 @@ class KEFfmpegGlobal : public QObject
 public:
     static KEFfmpegGlobal *instance();
     ~KEFfmpegGlobal();
-    int bufferSize() const;
     int samples() const;
     void setSamples(int samples);
-    AVSampleFormat sampleFormat() const;
-    void setSampleFormat(const AVSampleFormat &sampleFormat);
+    int getSampleFormat(const AVSampleFormat &sampleFormat);
     int sampleRate() const;
     void setSampleRate(int sampleRate);
     quint64 channelLayout() const;
@@ -59,14 +59,13 @@ private:
     bool m_initialized=false;
 
     //Layout parameters.
+    QHash<AVSampleFormat, int> m_sampleFormatMap;
     quint64 m_channelLayout;
-    AVSampleFormat m_sampleFormat;
     int m_samples;
     int m_sampleRate;
 
     //Layout information, generate via parameters.
     int m_channels;
-    int m_bufferSize;
 };
 
 #endif // KEFFMPEGGLOBAL_H

@@ -20,6 +20,8 @@
 
 #include <QFileInfo>
 
+#include "keffmpegglobal.h"
+
 #include "kedecoderbase.h"
 
 struct AVFormatContext;
@@ -39,13 +41,17 @@ public:
     bool loadLocalFile(const QString &filePath);
     KEAudioBufferData decodeData();
     int state();
-    int bufferSize();
     int sampleRate();
     int duration();
+    quint64 channelLayout() const;
+    int sampleFormat() const;
+
+public slots:
     bool seek(const qint64 &position);
 
 private:
     bool parseFormatContext();
+    inline void setSampleFormat(const AVSampleFormat &sampleFormat);
     KEFfmpegGlobal *m_ffmpegGlobal;
     SwrContext *m_resampleContext=nullptr;
     AVFormatContext *m_formatContext=nullptr;
@@ -55,7 +61,10 @@ private:
     QFileInfo m_currentFileInfo;
     int m_audioStreamIndex=-1;
     int m_audioFrameSize=0;
-    int dst_nb_samples;
+    int m_sampleRate=0;
+    quint64 m_channelLayout=0;
+    AVSampleFormat m_sampleFormat;
+    int m_destinationSamples;
     double m_timeBase=1.0;
 };
 

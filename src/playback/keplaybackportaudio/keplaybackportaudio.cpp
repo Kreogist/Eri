@@ -174,7 +174,7 @@ inline bool KEPlaybackPortAudio::openDefaultStream()
                                              0,
                                              m_portAudioGlobal->outputChannels(),
                                              m_portAudioGlobal->sampleFormat(),
-                                             m_portAudioGlobal->sampleRate(),
+                                             m_streamData.decoder->sampleRate(),
                                              0,
                                              NULL,
                                              NULL);

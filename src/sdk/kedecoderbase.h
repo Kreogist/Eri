@@ -35,16 +35,16 @@ public:
     virtual int state()=0;
 
     //Informations.
-    virtual int bufferSize()=0;
     virtual int sampleRate()=0;
     virtual int duration()=0;
-
-    //Operates
-    virtual bool seek(const qint64 &position)=0;
+    virtual quint64 channelLayout() const=0;
+    virtual int sampleFormat() const=0;
 
 signals:
 
 public slots:
+    //Operates
+    virtual bool seek(const qint64 &position)=0;
 };
 
 #endif // KEDECODERBASE_H

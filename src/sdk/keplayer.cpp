@@ -67,6 +67,7 @@ inline void KEPlayer::loadLocalFile(const QString &filePath)
     {
         if(m_decoder->loadLocalFile(filePath))
         {
+            //Update the duration.
             emit durationChanged(m_decoder->duration());
         }
     }
@@ -184,7 +185,10 @@ void KEPlayer::setPosition(qint64 position)
     //Seek back to 0.
     if(m_decoder!=nullptr)
     {
+        //Set the decoder position to the position.
         m_decoder->seek(position);
+        //Emit position changed signal.
+        emit positionChanged(position);
     }
 }
 

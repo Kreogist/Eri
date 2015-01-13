@@ -41,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QPushButton *buttonStop1=new QPushButton("Stop", this);
     connect(buttonStop1, SIGNAL(clicked()), this, SLOT(stop1()));
     buttons1->addWidget(buttonStop1);
-    QSlider *progress=new QSlider(Qt::Horizontal, this);
-    controlCenter->addWidget(progress);
+    QSlider *progress1=new QSlider(Qt::Horizontal, this);
+    controlCenter->addWidget(progress1);
 
     QBoxLayout *buttons2=new QBoxLayout(QBoxLayout::LeftToRight,
                                         controlCenter->widget());
@@ -59,6 +59,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QPushButton *buttonStop2=new QPushButton("Stop", this);
     connect(buttonStop2, SIGNAL(clicked()), this, SLOT(stop2()));
     buttons2->addWidget(buttonStop2);
+    QSlider *progress2=new QSlider(Qt::Horizontal, this);
+    controlCenter->addWidget(progress2);
 
 #ifdef ENABLE_OPENAL
     KEPlaybackOpenAL *openAL=new KEPlaybackOpenAL(this);
@@ -72,9 +74,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_player1->setPlayback(new KEPlaybackPortAudio);
     m_player2->setPlayback(new KEPlaybackPortAudio);
 #endif
-    connect(m_player1, &KEPlayer::durationChanged, [=](const qint64 &duration){progress->setRange(0, duration);});
-    connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){progress->setValue(position);});
+    connect(m_player1, &KEPlayer::durationChanged, [=](const qint64 &duration){progress1->setRange(0, duration);});
+    connect(m_player1, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide1){progress1->setValue(position);}});
+    connect(progress1, &QSlider::sliderPressed, [=]{m_slide1=false;});
+    connect(progress1, &QSlider::sliderReleased, [=]{m_player1->setPosition(progress1->value());m_slide1=true;});
 
+    connect(m_player2, &KEPlayer::durationChanged, [=](const qint64 &duration){progress2->setRange(0, duration);});
+    connect(m_player2, &KEPlayer::positionChanged, [=](const qint64 &position){if(m_slide2){progress2->setValue(position);}});
+    connect(progress2, &QSlider::sliderPressed, [=]{m_slide2=false;});
+    connect(progress2, &QSlider::sliderReleased, [=]{m_player2->setPosition(progress2->value());m_slide2=true;});
 }
 
 MainWindow::~MainWindow()

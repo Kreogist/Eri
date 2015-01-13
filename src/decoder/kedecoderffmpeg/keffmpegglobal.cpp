@@ -15,6 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
+#include "keglobal.h"
+
 #include "keffmpegglobal.h"
 
 KEFfmpegGlobal *KEFfmpegGlobal::m_instance=nullptr;
@@ -26,6 +28,18 @@ KEFfmpegGlobal::KEFfmpegGlobal(QObject *parent) :
     initialFFMpeg();
     //Initial the default output settings.
     resetPatameters();
+    //Initial format map hash.
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_U8, SampleUnsignInt8);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_S16, SampleSignInt16);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_S32, SampleSignInt32);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_FLT, SampleFloat);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_DBL, SampleDouble);
+
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_U8P, SampleUnsignInt8);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_S16P, SampleSignInt16);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_S32P, SampleSignInt32);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_FLTP, SampleFloat);
+    m_sampleFormatMap.insert(AV_SAMPLE_FMT_DBLP, SampleDouble);
 }
 
 quint64 KEFfmpegGlobal::channelLayout() const
@@ -45,17 +59,7 @@ void KEFfmpegGlobal::setSampleRate(int sampleRate)
     updateLayoutParameters();
 }
 
-AVSampleFormat KEFfmpegGlobal::sampleFormat() const
-{
-    return m_sampleFormat;
-}
 
-void KEFfmpegGlobal::setSampleFormat(const AVSampleFormat &sampleFormat)
-{
-    //Save sample format and update parameters.
-    m_sampleFormat = sampleFormat;
-    updateLayoutParameters();
-}
 
 int KEFfmpegGlobal::samples() const
 {
@@ -65,8 +69,13 @@ int KEFfmpegGlobal::samples() const
 void KEFfmpegGlobal::setSamples(int samples)
 {
     //Save sample and update parameters.
-    m_samples = samples;
+    m_samples=samples;
     updateLayoutParameters();
+}
+
+int KEFfmpegGlobal::getSampleFormat(const AVSampleFormat &sampleFormat)
+{
+    return m_sampleFormatMap.value(sampleFormat, -1);
 }
 
 KEFfmpegGlobal *KEFfmpegGlobal::instance()
@@ -94,19 +103,12 @@ inline void KEFfmpegGlobal::initialFFMpeg()
     m_initialized=true;
 }
 
-int KEFfmpegGlobal::bufferSize() const
-{
-    return m_bufferSize;
-}
-
 inline void KEFfmpegGlobal::resetPatameters()
 {
     //------This is the default settings------
     //[Locked]Output channel layout.
     //-!This settings cannot be changed.
     m_channelLayout=AV_CH_LAYOUT_STEREO;
-    //[AVSampleFormat]The sample mode, default is 16-bit int, base on your CPU.
-    m_sampleFormat=AV_SAMPLE_FMT_S16;
     //[Int]The sample size, based on your memory.
     m_samples=1024;
     //[Int]The sample rate.
@@ -120,10 +122,4 @@ inline void KEFfmpegGlobal::updateLayoutParameters()
 {
     //Get the channels, according to channel layout.
     m_channels=av_get_channel_layout_nb_channels(m_channelLayout);
-    //Update the buffer size.
-    m_bufferSize=av_samples_get_buffer_size(NULL,
-                                            m_channels,
-                                            m_samples,
-                                            m_sampleFormat,
-                                            1); //1 == no alignment
 }
