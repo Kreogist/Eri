@@ -107,12 +107,12 @@ bool KEDecoderFfmpeg::loadLocalFile(const QString &filePath)
     return parseFormatContext();
 }
 
-KEAudioBufferData KEDecoderFfmpeg::decodeData()
+bool KEDecoderFfmpeg::decodeData(KEAudioBufferData &buffer)
 {
     //Check format context first.
     if(m_formatContext==nullptr)
     {
-        return KEAudioBufferData();
+        return false;
     }
     //Initial a packet and a frame.
     AVFrame *audioFrame=av_frame_alloc();
@@ -154,7 +154,8 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
             packet.data=packetData;
             packet.size=packetSize;
             //Update resample data.
-            int currentSamples=av_rescale_rnd(swr_get_delay(m_resampleContext, audioFrame->sample_rate) + audioFrame->nb_samples,
+            int currentSamples=av_rescale_rnd(swr_get_delay(m_resampleContext,
+                                                            audioFrame->sample_rate) + audioFrame->nb_samples,
                                               m_sampleRate,
                                               audioFrame->sample_rate,
                                               AV_ROUND_UP);
@@ -166,7 +167,7 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
                                  &dst_linesize,
                                  av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
                                  currentSamples,
-                                 AV_SAMPLE_FMT_S16,
+                                 m_sampleFormat,
                                  1);
                 m_destinationSamples=currentSamples;
             }
@@ -175,32 +176,35 @@ KEAudioBufferData KEDecoderFfmpeg::decodeData()
                                 m_audioBuffer,
                                 m_destinationSamples,
                                 (const quint8 **)audioFrame->extended_data,
-                                audioFrame->nb_samples);
-
-            //Generate the buffer data.
-            KEAudioBufferData buffer;
+                                audioFrame->nb_samples),
+                bufferSize=av_samples_get_buffer_size(&dst_linesize,
+                                                      av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
+                                                      ret,
+                                                      m_sampleFormat,
+                                                      1);
+            //Ignore the no used buffer size.
+            if(bufferSize==0)
+            {
+                continue;
+            }
+            //Output the data to the buffer.
             //The frame count.
             buffer.frameCount=audioFrame->nb_samples;
             //First frame's timestamp.
             buffer.timestamp=packet.pts*m_timeBase;
             //Buffer raw data.
-            buffer.data=QByteArray((char *)m_audioBuffer[0],
-                                   av_samples_get_buffer_size(&dst_linesize,
-                                                              av_get_channel_layout_nb_channels(m_ffmpegGlobal->channelLayout()),
-                                                              ret,
-                                                              m_sampleFormat,
-                                                              1));
+            buffer.data=QByteArray((char *)m_audioBuffer[0], bufferSize);
             //Free the packet and frame.
             av_free_packet(&packet);
             av_frame_free(&audioFrame);
             //Return the data.
-            return buffer;
+            return true;
         }
         av_free_packet(&packet);
     }
     av_free_packet(&packet);
     av_frame_free(&audioFrame);
-    return KEAudioBufferData();
+    return false;
 }
 
 int KEDecoderFfmpeg::state()
@@ -294,14 +298,15 @@ bool KEDecoderFfmpeg::parseFormatContext()
 
     //Save the sample rate.
     m_sampleRate=m_codecContext->sample_rate;
+    m_channelLayout=m_codecContext->channel_layout;
     setSampleFormat(m_codecContext->sample_fmt);
-    qDebug()<<m_sampleFormat;
+    qDebug()<<m_channelLayout;
     //Update the resampling data.
     m_resampleContext=swr_alloc_set_opts(m_resampleContext,
                                          m_ffmpegGlobal->channelLayout(),
                                          m_sampleFormat,
                                          m_sampleRate,
-                                         av_get_default_channel_layout(m_codecContext->channels),
+                                         m_codecContext->channel_layout,
                                          m_codecContext->sample_fmt,
                                          m_codecContext->sample_rate,
                                          0,
@@ -355,4 +360,3 @@ void KEDecoderFfmpeg::setSampleFormat(const AVSampleFormat &sampleFormat)
         m_sampleFormat=AV_SAMPLE_FMT_NONE;
     }
 }
-

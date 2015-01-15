@@ -30,7 +30,7 @@ public:
     ~KEDecoderBase();
     virtual bool reset()=0;
     virtual bool loadLocalFile(const QString &filePath)=0;
-    virtual KEAudioBufferData decodeData()=0;
+    virtual bool decodeData(KEAudioBufferData &buffer)=0;
 
     virtual int state()=0;
 

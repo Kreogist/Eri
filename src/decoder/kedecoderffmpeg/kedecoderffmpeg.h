@@ -39,7 +39,7 @@ public:
     ~KEDecoderFfmpeg();
     bool reset();
     bool loadLocalFile(const QString &filePath);
-    KEAudioBufferData decodeData();
+    bool decodeData(KEAudioBufferData &buffer);
     int state();
     int sampleRate();
     int duration();

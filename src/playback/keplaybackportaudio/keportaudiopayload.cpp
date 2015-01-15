@@ -23,8 +23,9 @@ void KEPortAudioPayload::decodeAndPlay(KEPortAudioStream *streamData,
                                        KEPlaybackBase *playback)
 {
     //Get the output data.
-    KEAudioBufferData outputBuffer=streamData->decoder->decodeData();
-    while(streamData->state==PlayingState)
+    KEAudioBufferData outputBuffer;
+    while(streamData->state==PlayingState &&
+            streamData->decoder->decodeData(outputBuffer))
     {
         //Check is data empty.
         if(outputBuffer.data.isEmpty())
@@ -56,8 +57,6 @@ void KEPortAudioPayload::decodeAndPlay(KEPortAudioStream *streamData,
             }
             break;
         }
-        //Get the next buffer.
-        outputBuffer=streamData->decoder->decodeData();
     }
 }
 
